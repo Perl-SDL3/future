@@ -1,7 +1,7 @@
 use v5.40;
 use experimental 'class';
-
-class Alien::SDL3::Builder 0.01 {
+class    #
+    Alien::SDL3::Builder v0.0.1 {
     use CPAN::Meta;
     use ExtUtils::Install qw[install];
     use ExtUtils::InstallPaths;
@@ -79,7 +79,7 @@ class Alien::SDL3::Builder 0.01 {
         my $dist_name = $meta->name;
         my $share_dir = path('blib/lib/auto/share/dist')->child($dist_name)->absolute;
         $share_dir->mkpath;
-        my $repo = Alien::Xrepo->new( root => $share_dir->stringify, verbose => $verbose );
+        my $repo     = Alien::Xrepo->new( root => $share_dir->stringify, verbose => $verbose );
         my $make_rel = sub ($p) {
             return undef unless defined $p;
             my $path = path($p);
@@ -146,9 +146,9 @@ class Alien::SDL3::Builder 0.01 {
                             %%$c,
                             libpath     => $make_abs->($c->{libpath}),
                             installdir  => $make_abs->($c->{installdir}),
-                            includedirs =>[ map { $make_abs->($_) } @{ $c->{includedirs} // [] } ],
-                            linkdirs    =>[ map { $make_abs->($_) } @{ $c->{linkdirs} // [] } ],
-                            bindirs     =>[ map { $make_abs->($_) } @{ $c->{bindirs} // [] } ]
+                            includedirs => [ map { $make_abs->($_) } @{ $c->{includedirs} // [] } ],
+                            linkdirs    => [ map { $make_abs->($_) } @{ $c->{linkdirs} // [] } ],
+                            bindirs     => [ map { $make_abs->($_) } @{ $c->{bindirs} // [] } ]
                         };
                     }
                     $copy;
@@ -165,5 +165,33 @@ class Alien::SDL3::Builder 0.01 {
         $target_config->spew_utf8($content);
         say "Generated $target_config";
     }
-}
-1;
+
+    # Build support
+    sub Build_PL ($alien_class) {
+        use CPAN::Meta;
+        use Config;
+        use ExtUtils::Helpers qw[make_executable];
+        my $meta = CPAN::Meta->load_file('META.json');
+        say sprintf 'Creating new Build script for %s %s (%s)', $meta->name, $meta->version, $alien_class;
+        my $perl5lib = join( $Config{path_sep}, @INC );
+        path('Build')->spew_raw( sprintf <<~'EOF', $^X, $perl5lib, __PACKAGE__, __PACKAGE__, $alien_class );
+        #!%s
+        BEGIN { $ENV{PERL5LIB} = '%s' }
+        use lib qw[builder lib];
+        use %s;
+        %s::Build('%s');
+        EOF
+        make_executable('Build');
+        path('_build_params')->spew_raw( encode_json( [ \@ARGV, $alien_class ] ) );
+        $meta->save(@$_) for ['MYMETA.json'];
+    }
+
+    sub Build ( $alien_class = undef ) {
+        my $action = shift @ARGV // 'build';
+        if ( !$alien_class && -e '_build_params' ) {
+            my $params = decode_json( path('_build_params')->slurp_raw );
+            $alien_class = $params->[1];
+        }
+        __PACKAGE__->new( alien_class => $alien_class, action => $action, argv => \@ARGV )->execute();
+    }
+    } 1;

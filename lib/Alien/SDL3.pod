@@ -1,0 +1,79 @@
+=pod
+
+=encoding utf-8
+
+=head1 NAME
+
+Alien::SDL3 - Build and install SDL3, SDL3_mixer, SDL3_image, and SDL3_ttf
+
+=head1 SYNOPSIS
+
+    use Alien::SDL3;
+
+    my $alien = Alien::SDL3->new;
+    say $alien->cflags;
+    say $alien->libs;
+    say $alien->ffi_lib;
+
+=head1 DESCRIPTION
+
+Alien::SDL3 acquires C<libsdl3>, C<libsdl3_mixer>, C<libsdl3_image>, and C<libsdl3_ttf> via
+L<xrepo|https://xrepo.xmake.io/> in a single build. It is a subclass of L<Alien::Xrepo::Base>.
+
+=head1 METHODS
+
+=head2 C<package_name( )>
+
+    my $package = Alien::SDL3->package_name;
+
+Returns the primary C<xrepo> package name, C<libsdl3>.
+
+=head2 C<package_names( )>
+
+    my @packages = Alien::SDL3->new->package_names;
+
+Returns the C<xrepo> package names installed by this distribution: C<libsdl3>, C<libsdl3_mixer>, C<libsdl3_image>, and
+C<libsdl3_ttf>.
+
+=head2 C<install_opts( )>
+
+Options passed to L<Alien::Xrepo> when each package is installed during the C<Build> process.
+
+=head2 C<package_infos( )>
+
+    my @infos = Alien::SDL3->new->package_infos;
+
+Returns an L<Alien::Xrepo::PackageInfo> object for each installed package.
+
+=head2 C<cflags( )>
+
+Compiler flags for all four libraries.
+
+=head2 C<libs( )>
+
+Linker flags for all four libraries.
+
+=head2 C<ffi_libs( )>
+
+Absolute paths to the shared library of each installed package.
+
+=head2 C<dynamic_libs( )>
+
+The library files for all installed packages.
+
+=head1 SEE ALSO
+
+L<Alien::Xrepo::Base>, L<Alien::Xrepo>, L<Affix>, L<SDL3>
+
+=head1 LICENSE
+
+Copyright (C) Sanko Robinson.
+
+This library is free software; you can redistribute it and/or modify it under the terms found in the Artistic License
+2. Other copyrights, terms, and conditions may apply to data transmitted through this module.
+
+=head1 AUTHOR
+
+Sanko Robinson <https://github.com/sanko>
+
+=cut
