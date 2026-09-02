@@ -1,0 +1,95 @@
+{
+   "X_No_Archive" : "Yes",
+   "abstract" : "Build and install SDL3 and friends",
+   "author" : [
+      "Sanko Robinson <sanko@cpan.org>"
+   ],
+   "description" : "Locate or Build and Install SDL3, SDL3_mixer, SDL3_image, and SDL3_ttf",
+   "dynamic_config" : 0,
+   "generated_by" : "App::mii v1.0.0",
+   "keywords" : [],
+   "license" : [
+      "artistic_2"
+   ],
+   "meta-spec" : {
+      "url" : "https://metacpan.org/pod/CPAN::Meta::Spec",
+      "version" : 2
+   },
+   "name" : "Alien-SDL3",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "xt",
+         "inc",
+         "share",
+         "eg",
+         "examples",
+         "author"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "Alien::Xmake" : "0.08",
+            "Alien::Xrepo" : "0.08",
+            "CPAN::Meta" : "0",
+            "Config" : "0",
+            "ExtUtils::Helpers" : "0.028",
+            "JSON::PP" : "2",
+            "Path::Tiny" : "0"
+         }
+      },
+      "build" : {
+         "requires" : {
+            "Alien::Xrepo" : "0.08",
+            "CPAN::Meta" : "0",
+            "ExtUtils::Install" : "0",
+            "ExtUtils::InstallPaths" : "0.002",
+            "JSON::PP" : "2",
+            "Path::Tiny" : "0"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Alien::Xrepo" : "0.08",
+            "File::ShareDir" : "1.00",
+            "Path::Tiny" : "0",
+            "perl" : "5.040000"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test2::V0" : "0"
+         }
+      }
+   },
+   "provides" : {
+      "Alien::SDL3" : {
+         "file" : "lib/Alien/SDL3.pm",
+         "version" : "0.01"
+      },
+      "Alien::SDL3::Builder" : {
+         "file" : "lib/Alien/SDL3/Builder.pm",
+         "version" : "0.01"
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/sanko/future/issues"
+      },
+      "homepage" : "https://github.com/sanko/future",
+      "license" : [
+         "http://www.perlfoundation.org/artistic_license_2_0"
+      ],
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/sanko/future.git",
+         "web" : "https://github.com/sanko/future"
+      }
+   },
+   "version" : "0.01",
+   "x_authority" : "cpan:SANKO",
+   "x_serialization_backend" : "JSON::PP version 4.16",
+   "x_static_install" : 0
+}
