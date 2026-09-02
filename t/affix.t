@@ -38,6 +38,6 @@ SKIP: {
         }
     }
     catch ($e) { skip_all $e };
-
+}
 #
 done_testing;

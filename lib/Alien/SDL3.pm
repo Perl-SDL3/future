@@ -3,7 +3,7 @@ use experimental 'class';
 class Alien::SDL3 v0.0.1 : isa(Alien::Xrepo::Base) {
     use Path::Tiny qw[path];
     use JSON::PP 2 qw[encode_json decode_json];
-    use Alien::Xrepo::Base ();
+    use Alien::Xrepo::Base;
     method package_name ()  {'libsdl3'}
     method package_names () {qw[libsdl3 libsdl3_mixer libsdl3_image libsdl3_ttf]}
     method install_opts ()  { return ( kind => 'shared' ) }
@@ -15,6 +15,7 @@ class Alien::SDL3 v0.0.1 : isa(Alien::Xrepo::Base) {
         my @out;
         for my $name ( $self->package_names ) {
             my $c = $config->{$name} or next;
+            next if $c->{error};
             push @out, Alien::Xrepo::PackageInfo->new(%$c);
         }
         @out;

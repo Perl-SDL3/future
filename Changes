@@ -5,3 +5,8 @@ Revision history for Perl extension Alien::SDL3
       via xrepo using Alien::Xrepo::Base
     - Smoke test binds each shared library with Affix and checks the
       reported runtime version against ConfigData
+    - A package that fails to build is recorded in ConfigData as an
+      install error instead of aborting the build; package_infos, links,
+      ffi_libs, etc. omit it and package_error/missing_packages (inherited
+      from Alien::Xrepo::Base) report it
+    - Use Alien::Xrepo::Base's builder directly (multi-package installs)

@@ -30,6 +30,7 @@
    "prereqs" : {
       "build" : {
          "requires" : {
+            "Alien::Xrepo::Base" : "0.000010",
             "CPAN::Meta" : "0",
             "ExtUtils::Install" : "0",
             "ExtUtils::InstallPaths" : "0.002",
@@ -41,7 +42,7 @@
          "requires" : {
             "Alien::Xmake" : "0",
             "Alien::Xrepo" : "0",
-            "Alien::Xrepo::Base" : "0",
+            "Alien::Xrepo::Base" : "0.000010",
             "CPAN::Meta" : "0",
             "Config" : "0",
             "ExtUtils::Helpers" : "0.028",
@@ -56,6 +57,7 @@
          },
          "requires" : {
             "Alien::Xrepo" : "0",
+            "Alien::Xrepo::Base" : "0.000010",
             "File::ShareDir" : "1.00",
             "Path::Tiny" : "0",
             "perl" : "5.040000"

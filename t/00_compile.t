@@ -9,12 +9,14 @@ isa_ok $alien, ['Alien::Xrepo::Base'], 'Alien::SDL3 subclasses Alien::Xrepo::Bas
 is $alien->package_name,      'libsdl3',                                             'package_name is the core xrepo package';
 is [ $alien->package_names ], [qw[libsdl3 libsdl3_mixer libsdl3_image libsdl3_ttf]], 'package_names covers all four libraries';
 can_ok $alien,
-    qw[package_names install_opts package_infos includedirs linkdirs links cflags libs dynamic_libs ffi_libs bin_dir install upgrade libpath ffi_lib version kind find_header package_info];
+    qw[package_names install_opts package_infos package_error missing_packages includedirs linkdirs links cflags libs dynamic_libs ffi_libs bin_dir install upgrade libpath ffi_lib version kind find_header package_info];
 if ( my $info = $alien->package_info ) {
     isa_ok $info, ['Alien::Xrepo::PackageInfo'], 'package_info';
     diag '  - ' . ( $info->version // '?' ) . ' ' . ( $info->kind // '?' );
     diag '  - ' . $_ for grep {length} $alien->cflags;
     diag '  - ' . $_ for grep {length} $alien->libs;
 }
+is +[ $alien->missing_packages ], [], 'full install: no packages missing';
+ok !defined $alien->package_error('libsdl3_ttf'), 'full install: no recorded install errors';
 #
 done_testing;

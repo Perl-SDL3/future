@@ -61,6 +61,21 @@ Absolute paths to the shared library of each installed package.
 
 The library files for all installed packages.
 
+=head2 C<package_error( $name )>
+
+    my $error = $alien->package_error('libsdl3_ttf');
+
+If a package failed to build and install (it is recorded as an C<error> in C<ConfigData> rather than aborting the
+build), returns its error message, otherwise C<undef>.
+
+=head2 C<missing_packages( )>
+
+    my @missing = $alien->missing_packages;
+
+Returns the package names that failed to install, so F<FFI> wrappers can skip (or degrade around) a shared library that
+was never built. When that happens, the failed package is also excluded from C<package_infos>, C<cflags>, C<libs>,
+C<ffi_libs>, and C<dynamic_libs>.
+
 =head1 SEE ALSO
 
 L<Alien::Xrepo::Base>, L<Alien::Xrepo>, L<Affix>, L<SDL3>
