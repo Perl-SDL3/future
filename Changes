@@ -3,3 +3,5 @@ Revision history for Perl extension Alien::SDL3
 0.01    2026-09-01
     - Install libsdl3, libsdl3_mixer, libsdl3_image, and libsdl3_ttf
       via xrepo using Alien::Xrepo::Base
+    - Smoke test binds each shared library with Affix and checks the
+      reported runtime version against ConfigData

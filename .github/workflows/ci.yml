@@ -23,6 +23,7 @@ jobs:
         #~ `cpanm` binary into the active perl's bin dir). `command -v cpanm`
         #~ is a hard fail point that catches any no-op.
         curl -L https://cpanmin.us | perl - App::cpanminus
+        cpanm -v IO::Socket::SSL
         command -v cpanm
         cpanm -v .
       matrix: >
@@ -46,6 +47,7 @@ jobs:
         #~ is a hard fail point that catches any no-op.
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
+        cpanm -v IO::Socket::SSL
         cpanm -v .
       matrix: >
         [
@@ -70,6 +72,7 @@ jobs:
         export PATH="/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
         perl -e 'print qq(perl=\$^X :: \$^O\n)'
         curl -L https://cpanmin.us | perl - App::cpanminus
+        cpanm -v -n IO::Socket::SSL
         cpanm -v .
         perl Build.PL
         ./Build

@@ -6,10 +6,7 @@ class Alien::SDL3 v0.0.1 : isa(Alien::Xrepo::Base) {
     use Alien::Xrepo::Base ();
     method package_name ()  {'libsdl3'}
     method package_names () {qw[libsdl3 libsdl3_mixer libsdl3_image libsdl3_ttf]}
-
-    method install_opts () {
-        return ( kind => 'shared', );
-    }
+    method install_opts ()  { return ( kind => 'shared' ) }
 
     method package_infos () {
         my $class = ref($self) . '::ConfigData';
@@ -45,7 +42,9 @@ class Alien::SDL3 v0.0.1 : isa(Alien::Xrepo::Base) {
 
     method libs () {
         my %seen;
-        join ' ', map {"-L$_"} grep { !$seen{$_}++ } $self->linkdirs, map {"-l$_"} $self->links;
+        my @dirs = grep { !$seen{$_}++ } $self->linkdirs;
+        my @libs = grep { !$seen{$_}++ } $self->links;
+        join ' ', ( map {"-L$_"} @dirs ), ( map {"-l$_"} @libs );
     }
 
     method dynamic_libs () {

@@ -11,3 +11,4 @@ cpanfile
 lib/Alien/SDL3.pm
 lib/Alien/SDL3.pod
 t/00_compile.t
+t/affix.t
