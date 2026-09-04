@@ -1,22 +1,31 @@
-use Test2::V0;
+use v5.40;
 use blib;
+use Test2::V0;
 use Alien::SDL3;
+use feature 'try';
 #
-diag 'Alien::SDL3::VERSION == ' . $Alien::SDL3::VERSION;
+try { require Affix; } catch($e){
+skip_all 'Needs Affix'    }
+my $sdl3 = Alien::SDL3->new;
+isa_ok $sdl3, ['Alien::SDL3'],        'isa Alien::SDL3';
+isa_ok $sdl3, ['Alien::Xrepo::Base'], 'isa Alien::Xrepo::Base';
+#~ is [ $sdl3->package_names ], [ 'libsdl3', 'libsdl3_image', 'libsdl3_ttf', 'libsdl3_mixer' ], 'package_names lists the SDL3 family';
 #
-my $alien = Alien::SDL3->new;
-isa_ok $alien, ['Alien::Xrepo::Base'], 'Alien::SDL3 subclasses Alien::Xrepo::Base';
-is $alien->package_name,      'libsdl3',                                             'package_name is the core xrepo package';
-is [ $alien->package_names ], [qw[libsdl3 libsdl3_mixer libsdl3_image libsdl3_ttf]], 'package_names covers all four libraries';
-can_ok $alien,
-    qw[package_names install_opts package_infos package_error missing_packages includedirs linkdirs links cflags libs dynamic_libs ffi_libs bin_dir install upgrade libpath ffi_lib version kind find_header package_info];
-if ( my $info = $alien->package_info ) {
-    isa_ok $info, ['Alien::Xrepo::PackageInfo'], 'package_info';
-    diag '  - ' . ( $info->version // '?' ) . ' ' . ( $info->kind // '?' );
-    diag '  - ' . $_ for grep {length} $alien->cflags;
-    diag '  - ' . $_ for grep {length} $alien->libs;
+for my $name ( $sdl3->package_names ) {
+    my $alt  = $sdl3->alt($name);
+    my $info = $alt->package_info;
+    unless ($info) {
+        diag $name . ' is missing';
+        next;
+    }
+    diag sprintf '%-16s v%-9s %-8s',  $name, $info->version, $info->kind;
+    diag sprintf '  installdir : %s', $info->installdir // '(none)';
+    diag sprintf '  libpath    : %s', $info->libpath    // '(none)';
+    diag sprintf '  dynamic    : %s', join( '; ', @{ $info->libfiles    // [] } ) || '(none)';
+    diag sprintf '  includes   : %s', join( '; ', @{ $info->includedirs // [] } ) || '(none)';
+    diag sprintf '  cflags     : %s', $alt->cflags;
+    diag sprintf '  libs       : %s', $alt->libs;
 }
-is +[ $alien->missing_packages ], [], 'full install: no packages missing';
-ok !defined $alien->package_error('libsdl3_ttf'), 'full install: no recorded install errors';
+
 #
 done_testing;

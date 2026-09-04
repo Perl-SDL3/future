@@ -7,6 +7,9 @@ META.json
 META.yml
 README.md
 cpanfile
+eg/Affix.pl
+eg/Inline.pl
+eg/Platypus.pl
 lib/Alien/SDL3.pm
 lib/Alien/SDL3.pod
 t/00_compile.t

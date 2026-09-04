@@ -65,6 +65,25 @@ Absolute paths to the shared library of each installed package.
 
 The library files for all installed packages.
 
+## `package_error( $name )`
+
+```perl
+my $error = $alien->package_error('libsdl3_ttf');
+```
+
+If a package failed to build and install (it is recorded as an `error` in `ConfigData` rather than aborting the
+build), returns its error message, otherwise `undef`.
+
+## `missing_packages( )`
+
+```perl
+my @missing = $alien->missing_packages;
+```
+
+Returns the package names that failed to install, so `FFI` wrappers can skip (or degrade around) a shared library that
+was never built. When that happens, the failed package is also excluded from `package_infos`, `cflags`, `libs`,
+`ffi_libs`, and `dynamic_libs`.
+
 # SEE ALSO
 
 [Alien::Xrepo::Base](https://metacpan.org/pod/Alien%3A%3AXrepo%3A%3ABase), [Alien::Xrepo](https://metacpan.org/pod/Alien%3A%3AXrepo), [Affix](https://metacpan.org/pod/Affix), [SDL3](https://metacpan.org/pod/SDL3)

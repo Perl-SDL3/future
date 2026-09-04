@@ -10,7 +10,7 @@ SKIP: {
         Affix->import(qw[:all]);
         #
         my $alien = Alien::SDL3->new;
-        my @infos = $alien->package_infos;
+        my @infos = $alien->package_info;
         skip_all 'Run `perl Build` first so ConfigData knows where the libraries live' unless @infos;
 
         # xrepo drops each package into its own bin directory, but the companion DLLs import
@@ -20,7 +20,6 @@ SKIP: {
         # Each package exports an int SDLx_Version(void) returning SDL_VERSIONNUM(major, minor, patch);
         my %version_symbol = ( SDL3 => 'SDL_GetVersion', SDL3_mixer => 'MIX_Version', SDL3_image => 'IMG_Version', SDL3_ttf => 'TTF_Version' );
         my @pairs          = map { [ $_->links->[0], $_ ] } grep { @{ $_->links // [] } } @infos;
-
         #
         for my $pair (@pairs) {
             my ( $link, $info ) = @$pair;

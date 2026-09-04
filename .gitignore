@@ -34,3 +34,5 @@ t/dev/
 
 *.session
 share/*
+
+eg/_Inline/

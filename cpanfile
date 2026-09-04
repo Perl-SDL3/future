@@ -1,6 +1,6 @@
 requires 'Alien::Xrepo';
 requires 'Alien::Xrepo::Base', '0.000010';
-requires 'File::ShareDir', '1.00';
+requires 'File::ShareDir',     '1.00';
 requires 'Path::Tiny';
 requires 'perl', '5.040000';
 recommends 'Affix';
