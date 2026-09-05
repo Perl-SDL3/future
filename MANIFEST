@@ -12,7 +12,6 @@ eg/Inline.pl
 eg/Platypus.pl
 lib/Alien/SDL3.pm
 lib/Alien/SDL3.pod
-recipes/libsdl3_ttf/xmake.lua
 t/00_compile.t
 t/affix.t
 t/missing_package.t

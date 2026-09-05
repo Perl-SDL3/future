@@ -48,6 +48,12 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
         cpanm -v IO::Socket::SSL
+        #~ Hide Homebrew's statically-linked freetype so the xrepo libsdl3_ttf
+        #~ build compiles its own freetype from source. Homebrew's libfreetype.a
+        #~ links private bz2/z/png/brotli deps that the ttf recipe does not add
+        #~ to the macOS link line, so linking fails. Building freetype ourselves
+        #~ keeps the final ttf dylib self-contained and ldd-clean.
+        brew uninstall --force --ignore-dependencies freetype 2>/dev/null || true
         cpanm -v .
       matrix: >
         [
