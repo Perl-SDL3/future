@@ -25,10 +25,10 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         cpanm -v IO::Socket::SSL
         command -v cpanm
-        #~ Use the dev Alien::Xmake: its bundled xmake + the merged --includes
-        #~ recipe override fix (PR #15) are what make libsdl3_ttf build with the
-        #~ vendored freetype recipe in recipes/.
-        cpanm -v https://github.com/sanko/Alien-Xmake.git@dev
+        #~ Use the main Alien::Xmake: its bundled xmake + the merged --includes
+        #~ recipe override fix (sanko/Alien-Xmake#16) are what make libsdl3_ttf
+        #~ build with the vendored recipe in recipes/.
+        cpanm -v https://github.com/sanko/Alien-Xmake.git@main
         cpanm -v .
       matrix: >
         [
@@ -52,7 +52,7 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
         cpanm -v IO::Socket::SSL
-        cpanm -v https://github.com/sanko/Alien-Xmake.git@dev
+        cpanm -v https://github.com/sanko/Alien-Xmake.git@main
         cpanm -v .
       matrix: >
         [
@@ -78,7 +78,7 @@ jobs:
         perl -e 'print qq(perl=\$^X :: \$^O\n)'
         curl -L https://cpanmin.us | perl - App::cpanminus
         cpanm -v -n IO::Socket::SSL
-        cpanm -v https://github.com/sanko/Alien-Xmake.git@dev
+        cpanm -v https://github.com/sanko/Alien-Xmake.git@main
         cpanm -v .
         perl Build.PL
         ./Build
@@ -94,3 +94,4 @@ jobs:
     if: always()
     needs: [linux, macos, windows]
     uses: sanko/workflow-testing/.github/workflows/results-summary.yml@main
+
