@@ -29,6 +29,9 @@ jobs:
         #~ from the repo so CI exercises the code being developed: the Builder,
         #~ Alien::Xrepo::Base, and the default-store install path.
         cpanm -v https://github.com/sanko/Alien-Xmake.git
+        #~ Force-install Affix so the shared libraries land in a real FFI
+        #~ binding during the tests. That is the whole point of this module.
+        cpanm -v --force Affix
         cpanm -v .
       matrix: >
         [
@@ -53,6 +56,9 @@ jobs:
         command -v cpanm
         cpanm -v IO::Socket::SSL
         cpanm -v https://github.com/sanko/Alien-Xmake.git
+        #~ Force-install Affix so the shared libraries land in a real FFI
+        #~ binding during the tests. That is the whole point of this module.
+        cpanm -v --force Affix
         cpanm -v .
       matrix: >
         [
@@ -78,7 +84,14 @@ jobs:
         perl -e 'print qq(perl=\$^X :: \$^O\n)'
         curl -L https://cpanmin.us | perl - App::cpanminus
         cpanm -v -n IO::Socket::SSL
-        cpanm -v https://github.com/sanko/Alien-Xmake.git
+        #~ Notest: Alien-Xmake's own t/02,t/04,t/05 spawn native xmake.exe, which
+        #~ fails from deep perl-under-git-bash on Windows ("Can't spawn ... No
+        #~ error"). We only need the wrapper installed; the consumer's own tests
+        #~ run on PowerShell below.
+        cpanm -v -n https://github.com/sanko/Alien-Xmake.git
+        #~ Force-install Affix so the shared libraries land in a real FFI
+        #~ binding during the tests. That is the whole point of this module.
+        cpanm -v --force Affix
         cpanm -v .
         perl Build.PL
         ./Build
