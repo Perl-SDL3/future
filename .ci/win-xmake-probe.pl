@@ -2,8 +2,59 @@ use v5.36;
 use Capture::Tiny qw(capture);
 use File::Temp qw(tempdir);
 use File::Spec;
+use Cwd qw(getcwd);
 
 $| = 1;
+
+sub find_lua ( $dir, $depth = 0 ) {
+    my @hits;
+    return () if $depth > 14;
+    opendir my $dh, $dir or return ();
+    for my $e ( grep { $_ !~ /^\.\.?$/ } readdir $dh ) {
+        my $p = File::Spec->catdir( $dir, $e );
+        if ( -d $p && -l $p == 0 ) { push @hits, find_lua( $p, $depth + 1 ); }
+        elsif ( $e eq 'xmake.lua' && -f $p ) { push @hits, $p; }
+    }
+    closedir $dh;
+    return @hits;
+}
+
+sub diag ( $tag ) {
+    say "\n[DIAG $tag] cwd=" . getcwd();
+    opendir my $dh, '.';
+    say "[DIAG $tag] '.' entries: " . join( ', ', sort grep { $_ !~ /^\.+$/ } readdir $dh );
+    closedir $dh;
+    if ( -f 'xmake.lua' ) {
+        open my $fh, '<:raw', 'xmake.lua' or die "open xmake.lua: $!";
+        local $/;
+        my $content = <$fh>;
+        close $fh;
+        say "[DIAG $tag] xmake.lua bytes=" . length( $content // '' );
+        say "[DIAG $tag] xmake.lua content:\n$content";
+    }
+    else {
+        say "[DIAG $tag] no xmake.lua in cwd";
+    }
+    for my $k ( sort grep { /^XMAKE|^TEMP|^TMP|^LOCALAPPDATA|^USERPROFILE/ } keys %ENV ) {
+        say "[DIAG $tag] ENV $k=[$ENV{$k}]";
+    }
+    my $xm = $ENV{LOCALAPPDATA} . '\\.xmake';
+    if ( -d $xm ) {
+        my @found = find_lua($xm);
+        say "[DIAG $tag] .xmake xmake.lua files: " . ( scalar @found || 'none' );
+        for my $f (@found) {
+            open my $fh, '<:raw', $f;
+            local $/;
+            my $c = <$fh>;
+            close $fh;
+            say "[DIAG $tag] FILE $f bytes=" . length( $c // '' );
+            say "[DIAG $tag] FILE $f content:\n$c" if length( $c // '' ) < 4000;
+        }
+    }
+    else {
+        say "[DIAG $tag] no $xm";
+    }
+}
 say "== win-xmake-probe ==";
 say "perl=$^X :: $^O :: v$]";
 
@@ -51,8 +102,10 @@ try 'capture-addrepo' => sub {
     my ( $out, $err, $exit ) = capture {
         system( $exe, 'lua', 'private.xrepo', 'add-repo', '-y', 'probe-repo', 'http://127.0.0.1:9/nope.git' );
     };
-    return "exit=$exit err=[$err] fullout_len=" . length($out) . "\n";
+    return "exit=$exit err=[$err] fullout_len=" . length($out) . "\nFULLOUT:\n$out\n";
 };
+
+diag('after-addrepo');
 
 # The wrapper's install() path is functionally: xmake lua private.xrepo install -y
 # <flags> <pkg>. Flags include --extra={system=false} which triggers xmake's OWN
@@ -71,6 +124,8 @@ try 'capture-install-plain' => sub {
     return "exit=$exit err_tail=[$err] out_len=" . length($out) . "\nOUT_TAIL:\n" . substr( $out, -1200 ) . "\n";
 };
 
+diag('after-install-plain');
+
 try 'capture-install-extra' => sub {
     my ( $out, $err, $exit ) = capture {
         local $ENV{XMAKE_THEME} = 'plain';
@@ -78,6 +133,18 @@ try 'capture-install-extra' => sub {
     };
     return "exit=$exit err_tail=[$err] out_len=" . length($out) . "\nOUT_TAIL:\n" . substr( $out, -1200 ) . "\n";
 };
+
+diag('after-install-extra');
+
+try 'capture-list-repo' => sub {
+    local $ENV{XMAKE_THEME} = 'plain';
+    my ( $out, $err, $exit ) = capture {
+        system( $exe, 'lua', 'private.xrepo', 'list-repo' );
+    };
+    return "exit=$exit err=[$err] out_len=" . length($out) . "\nOUT_TAIL:\n" . substr( $out, -1200 ) . "\n";
+};
+
+diag('after-list-repo');
 
 say "\n== SUMMARY ==";
 for my $k ( sort keys %res ) {

@@ -19,6 +19,11 @@
 --   * on Windows, "freetype" is added to the `packagedeps` of the cmake install
 --     so xmake generates a FindFreetype module for CMake; hand-passed
 --     -DFREETYPE_* cache vars otherwise get lost on some toolchains.
+--   * freetype's `zlib` config is disabled (default is true). With it enabled the
+--     freetype build on Windows only passes -DZLIB_* vars when its zlib dep
+--     resolves non-system; when it doesn't, CMake's `find_package(ZLIB REQUIRED)`
+--     fails the whole install. TTF itself needs no gzip'd font support, so disable
+--     zlib to keep the freetype build self-contained everywhere.
 -- Keep this file in sync with the upstream recipe when bumping versions.
 --
 package("libsdl3_ttf")
@@ -54,7 +59,7 @@ package("libsdl3_ttf")
     -- libraries anywhere. `system = false` keeps xmake from satisfying freetype
     -- from a Homebrew/apt static lib despite the shared config (the fetch would
     -- otherwise prefer the system source and return its static archive).
-    add_deps("freetype", {configs = {shared = true}, system = false})
+    add_deps("freetype", {configs = {shared = true, zlib = false}, system = false})
 
     add_configs("harfbuzz", {description = "Use harfbuzz to improve text shaping", default = false, type = "boolean"})
     add_configs("plutosvg", {description = "Use plutosvg for color emoji support", default = false, type = "boolean"})
