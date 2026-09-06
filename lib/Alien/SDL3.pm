@@ -15,7 +15,16 @@ class Alien::SDL3 : isa(Alien::Xrepo::Base) {
         # This module exists to hand SDL3's shared libraries to an FFI binding
         # (Affix). Ask for shared explicitly; the wrapper no longer forces a
         # kind, so a bare `xrepo install` would hand back archives here.
-        return ( kind => 'shared' );
+        #
+        # The recipes/ tree registered below shadows xmake-repo with patched
+        # copies of the recipes this module depends on (currently libsdl3_ttf,
+        # which must build freetype shared or a static libfreetype drags its
+        # transitive -lz/-lbz2/-lpng deps into a shared link and fails). Local
+        # repositories are consulted before xmake-repo, so the patches win.
+        return (
+            kind        => 'shared',
+            local_repos => [ path(__FILE__)->parent->parent->parent->child('recipes') ],
+        );
     }
 }
 #
