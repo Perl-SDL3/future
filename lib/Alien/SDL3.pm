@@ -12,8 +12,10 @@ class Alien::SDL3 : isa(Alien::Xrepo::Base) {
     method pkg_name { [ 'libsdl3', 'libsdl3_image', 'libsdl3_ttf', 'libsdl3_mixer' ] }
 
     method install_opts {
-        # Let xrepo pick the default kind; matches a bare `xrepo install`.
-        return ();
+        # This module exists to hand SDL3's shared libraries to an FFI binding
+        # (Affix). Ask for shared explicitly; the wrapper no longer forces a
+        # kind, so a bare `xrepo install` would hand back archives here.
+        return ( kind => 'shared' );
     }
 }
 #
