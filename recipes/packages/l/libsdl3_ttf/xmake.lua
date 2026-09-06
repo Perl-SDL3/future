@@ -45,13 +45,16 @@ package("libsdl3_ttf")
     add_versions("github:3.2.0", "release-3.2.0")
 
     add_deps("cmake")
-    -- Freetype must be shared: a STATIC libfreetype.a (xmake-built or Homebrew)
-    -- records its own deps (-lz, -lbz2, ...) only as link-time requirements, and
-    -- neither librarydeps() nor a bare pkg-config call can reliably surface them
-    -- on CI (no pkg-config on macOS runners; xmake's freetype2.pc is not on
-    -- PKG_CONFIG_PATH). A shared libfreetype carries those deps itself, so
-    -- linking a shared libsdl3_ttf needs no extra transitive libraries anywhere.
-    add_deps("freetype", {configs = {shared = true}})
+    -- Freetype must be shared AND built from source. A STATIC libfreetype.a
+    -- (xmake-built or Homebrew) records its own deps (-lz, -lbz2, ...) only as
+    -- link-time requirements that neither librarydeps() nor a bare pkg-config
+    -- call surfaces on CI (no pkg-config on macOS runners; xmake's freetype2.pc
+    -- is not on PKG_CONFIG_PATH). A shared libfreetype carries those deps
+    -- itself, so linking a SHARED libsdl3_ttf needs no extra transitive
+    -- libraries anywhere. `system = false` keeps xmake from satisfying freetype
+    -- from a Homebrew/apt static lib despite the shared config (the fetch would
+    -- otherwise prefer the system source and return its static archive).
+    add_deps("freetype", {configs = {shared = true}, system = false})
 
     add_configs("harfbuzz", {description = "Use harfbuzz to improve text shaping", default = false, type = "boolean"})
     add_configs("plutosvg", {description = "Use plutosvg for color emoji support", default = false, type = "boolean"})

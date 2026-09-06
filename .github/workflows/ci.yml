@@ -89,6 +89,9 @@ jobs:
         #~ error"). We only need the wrapper installed; the consumer's own tests
         #~ run on PowerShell below.
         cpanm -v -n https://github.com/sanko/Alien-Xmake.git
+        #~ Spawn matrix against the sharedir xmake to pinpoint the exact
+        #~ mechanism of the add_repo ENOTTY failure before the full build.
+        perl .ci/win-xmake-probe.pl
         #~ Force-install Affix so the shared libraries land in a real FFI
         #~ binding during the tests. That is the whole point of this module.
         cpanm -v --force Affix
