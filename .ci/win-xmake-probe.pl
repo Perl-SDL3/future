@@ -54,6 +54,22 @@ sub diag ( $tag ) {
     else {
         say "[DIAG $tag] no $xm";
     }
+    my $txm = $ENV{TEMP} . '\\.xmake';
+    if ( -d $txm ) {
+        my @tfound = ( find_lua($txm) );
+        say "[DIAG $tag] TEMP\\.xmake lua files: " . ( scalar @tfound || 'none' );
+        for my $f (@tfound) {
+            open my $fh, '<:raw', $f;
+            local $/;
+            my $c = <$fh>;
+            close $fh;
+            say "[DIAG $tag] TFILE $f bytes=" . length( $c // '' );
+            say "[DIAG $tag] TFILE $f content:\n$c" if length( $c // '' ) < 4000;
+        }
+    }
+    else {
+        say "[DIAG $tag] no TEMP\\.xmake";
+    }
 }
 say "== win-xmake-probe ==";
 say "perl=$^X :: $^O :: v$]";
@@ -111,10 +127,14 @@ diag('after-addrepo');
 # <flags> <pkg>. Flags include --extra={system=false} which triggers xmake's OWN
 # re-exec of itself. Probe that exact shape in a scratch project.
 my $tmp = tempdir( 'xprobe-XXXX', CLEANUP => 1, TMPDIR => 1 );
+my $probe_tmp = File::Spec->catdir( $tmp, 'probe-temp' );
+mkdir $probe_tmp or die "mkdir $probe_tmp: $!" unless -d $probe_tmp;
 open my $fh, '>', File::Spec->catfile( $tmp, 'xmake.lua' ) or die "open: $!";
 print {$fh} qq{add_requires("zlib")\ntarget("p")\n    set_kind("static")\n};
 close $fh;
 chdir $tmp or die "chdir $tmp: $!";
+
+my $real_tmp = $ENV{TEMP};
 
 try 'capture-install-plain' => sub {
     my ( $out, $err, $exit ) = capture {
@@ -125,6 +145,33 @@ try 'capture-install-plain' => sub {
 };
 
 diag('after-install-plain');
+
+try 'capture-install-tmp' => sub {
+    my ( $out, $err, $exit ) = capture {
+        local $ENV{XMAKE_THEME} = 'plain';
+        local $ENV{TEMP}        = $probe_tmp;
+        local $ENV{TMP}         = $probe_tmp;
+        system( $exe, 'lua', 'private.xrepo', 'install', '-y', 'zlib' );
+    };
+    return "exit=$exit err_tail=[$err] out_len=" . length($out) . "\nOUT_TAIL:\n" . substr( $out, -1200 ) . "\n";
+};
+
+say "\n[DIAG probe-temp]== dir /s /b of real TEMP\\.xmake ==";
+say qx{cmd /c dir /s /b "$real_tmp\\.xmake"} if -d "$real_tmp\\.xmake";
+say "[DIAG after-install-tmp] cwd=" . getcwd();
+my @probe_hits = find_lua($probe_tmp);
+say "[DIAG after-install-tmp] probe-temp .xmake lua files: " . ( scalar @probe_hits || 'none' );
+for my $f (@probe_hits) {
+    open my $fh2, '<:raw', $f;
+    local $/;
+    my $c = <$fh2>;
+    close $fh2;
+    say "[DIAG after-install-tmp] FILE $f bytes=" . length( $c // '' );
+    say "[DIAG after-install-tmp] FILE $f content:\n$c" if length( $c // '' ) < 4000;
+}
+opendir( my $pd, $probe_tmp );
+say "[DIAG after-install-tmp] probe-temp/.xmake entries: " . join( ', ', grep { $_ !~ /^\.+$/ } readdir $pd );
+closedir $pd;
 
 try 'capture-install-extra' => sub {
     my ( $out, $err, $exit ) = capture {
