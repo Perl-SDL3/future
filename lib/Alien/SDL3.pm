@@ -12,7 +12,8 @@ class Alien::SDL3 : isa(Alien::Xrepo::Base) {
     method pkg_name { [ 'libsdl3', 'libsdl3_image', 'libsdl3_ttf', 'libsdl3_mixer' ] }
 
     method install_opts {
-        return ( kind => 'shared' );
+        # Let xrepo pick the default kind; matches a bare `xrepo install`.
+        return ();
     }
 }
 #
