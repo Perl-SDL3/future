@@ -27,8 +27,10 @@ jobs:
         command -v cpanm
         #~ The released Alien-Xmake on CPAN lags this repo. Install the wrapper
         #~ from the repo so CI exercises the code being developed: the Builder,
-        #~ Alien::Xrepo::Base, and the default-store install path.
-        cpanm -v https://github.com/sanko/Alien-Xmake.git
+        #~ Alien::Xrepo::Base, and the default-store install path. Notest: the
+        #~ wrapper's own t/02 xrepo-installs over the network and flakes on
+        #~ slow runners; what we gate on is the consumer's own test suite.
+        cpanm -v -n https://github.com/sanko/Alien-Xmake.git
         #~ Force-install Affix so the shared libraries land in a real FFI
         #~ binding during the tests. That is the whole point of this module.
         cpanm -v --force Affix
@@ -55,7 +57,7 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
         cpanm -v IO::Socket::SSL
-        cpanm -v https://github.com/sanko/Alien-Xmake.git
+        cpanm -v -n https://github.com/sanko/Alien-Xmake.git
         #~ Force-install Affix so the shared libraries land in a real FFI
         #~ binding during the tests. That is the whole point of this module.
         cpanm -v --force Affix
