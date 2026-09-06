@@ -113,6 +113,16 @@ try 'capture-list-version' => sub {
     return ( $exit == 0 ? "rc0 outlen=" . length($out) . "\n" : "rc$exit err=$err" );
 };
 
+# Isolate every xrepo scratch project (incl. the add-repo `create working`
+# scaffold) under probe-temp so the probe itself never poisons the CI job's
+# real %TEMP%\.xmake -- the very bug it exists to pin down.
+my $real_tmp  = $ENV{TEMP};
+my $tmp       = tempdir( 'xprobe-XXXX', CLEANUP => 1, TMPDIR => 1 );
+my $probe_tmp = File::Spec->catdir( $tmp, 'probe-temp' );
+mkdir $probe_tmp or die "mkdir $probe_tmp: $!" unless -d $probe_tmp;
+$ENV{TEMP} = $probe_tmp;
+$ENV{TMP}  = $probe_tmp;
+
 # add-repo using a bogus URL: proves the FIRST xmake spawn path works
 try 'capture-addrepo' => sub {
     my ( $out, $err, $exit ) = capture {
@@ -126,15 +136,10 @@ diag('after-addrepo');
 # The wrapper's install() path is functionally: xmake lua private.xrepo install -y
 # <flags> <pkg>. Flags include --extra={system=false} which triggers xmake's OWN
 # re-exec of itself. Probe that exact shape in a scratch project.
-my $tmp = tempdir( 'xprobe-XXXX', CLEANUP => 1, TMPDIR => 1 );
-my $probe_tmp = File::Spec->catdir( $tmp, 'probe-temp' );
-mkdir $probe_tmp or die "mkdir $probe_tmp: $!" unless -d $probe_tmp;
 open my $fh, '>', File::Spec->catfile( $tmp, 'xmake.lua' ) or die "open: $!";
 print {$fh} qq{add_requires("zlib")\ntarget("p")\n    set_kind("static")\n};
 close $fh;
 chdir $tmp or die "chdir $tmp: $!";
-
-my $real_tmp = $ENV{TEMP};
 
 try 'capture-install-plain' => sub {
     my ( $out, $err, $exit ) = capture {
