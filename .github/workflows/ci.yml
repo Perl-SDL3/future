@@ -25,6 +25,10 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         cpanm -v IO::Socket::SSL
         command -v cpanm
+        #~ The released Alien-Xmake on CPAN lags this repo. Install the wrapper
+        #~ from the repo so CI exercises the code being developed: the Builder,
+        #~ Alien::Xrepo::Base, and the default-store install path.
+        cpanm -v https://github.com/sanko/Alien-Xmake.git
         cpanm -v .
       matrix: >
         [
@@ -48,6 +52,7 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
         cpanm -v IO::Socket::SSL
+        cpanm -v https://github.com/sanko/Alien-Xmake.git
         cpanm -v .
       matrix: >
         [
@@ -73,6 +78,7 @@ jobs:
         perl -e 'print qq(perl=\$^X :: \$^O\n)'
         curl -L https://cpanmin.us | perl - App::cpanminus
         cpanm -v -n IO::Socket::SSL
+        cpanm -v https://github.com/sanko/Alien-Xmake.git
         cpanm -v .
         perl Build.PL
         ./Build
