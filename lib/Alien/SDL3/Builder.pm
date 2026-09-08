@@ -25,7 +25,14 @@ sub ACTION_build {
     $repo->install( 'libsdl3',       undef, kind => 'shared' );
     $repo->install( 'libsdl3_mixer', undef, kind => 'shared' );
     $repo->install( 'libsdl3_image', undef, kind => 'shared' );
-    $repo->install( 'libsdl3_ttf',   undef, kind => 'shared' );
+    #
+    # SDL3_ttf links libfreetype, but the xmake-repo libsdl3_ttf recipe never
+    # links a static archive's transitive deps (undefined BZ2_bzDecompress on
+    # macOS, inflate on Linux, "Freetype not found" on Windows). Ensure a
+    # SHARED freetype is in the xmake store first so the ttf build links a
+    # dynamic libfreetype that carries those symbols itself.
+    $repo->install( 'freetype',    undef, kind => 'shared' );
+    $repo->install( 'libsdl3_ttf', undef, kind => 'shared' );
     #
     $self->SUPER::ACTION_build(@_);
     return 0;
