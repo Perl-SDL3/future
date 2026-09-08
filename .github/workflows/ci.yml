@@ -24,15 +24,6 @@ jobs:
         #~ is a hard fail point that catches any no-op.
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
-        #~ Pre-install a SHARED freetype into the xmake store. The xmake-repo
-        #~ libsdl3_ttf recipe links libfreetype but never links its static
-        #~ transitive deps, which dies with undefined BZ2_bzDecompress (macOS,
-        #~ brew libfreetype.a) or inflate (Linux, xmake-built libfreetype.a).
-        #~ A shared freetype carries those symbols itself, so the recipe's
-        #~ CMake call gets a plain dynamic library instead.
-        XM="$PWD/perl-dist/lib/$(perl -e 'printf qq(%vd), $^V')/auto/share/dist/Alien-Xmake/bin/xmake"
-        echo "pre-installing shared freetype via: $XM"
-        XMAKE_THEME=plain "$XM" lua private.xrepo install -y -k shared freetype
         cpanm -v .
       matrix: >
         [
@@ -55,11 +46,6 @@ jobs:
         #~ is a hard fail point that catches any no-op.
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
-        #~ Pre-install a SHARED freetype into the xmake store (see Linux task
-        #~ for why: the libsdl3_ttf recipe fails to link static freetype deps).
-        XM="$PWD/perl-dist/lib/$(perl -e 'printf qq(%vd), $^V')/auto/share/dist/Alien-Xmake/bin/xmake"
-        echo "pre-installing shared freetype via: $XM"
-        XMAKE_THEME=plain "$XM" lua private.xrepo install -y -k shared freetype
         cpanm -v .
       matrix: >
         [
@@ -84,13 +70,6 @@ jobs:
         export PATH="/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
         perl -e 'print qq(perl=\$^X :: \$^O\n)'
         curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Pre-install a SHARED freetype into the xmake store. Strawberry's
-        #~ Alien-Xmake ships xmake.exe under its share dist; see the Linux task
-        #~ for why shared freetype is needed (libsdl3_ttf static-link bug).
-        XM="/c/Strawberry/perl/lib/auto/share/dist/Alien-Xmake/xmake.exe"
-        test -f "$XM" || XM=$(find /c/Strawberry/perl -path '*/auto/share/dist/Alien-Xmake/xmake.exe' | head -n1)
-        echo "pre-installing shared freetype via: $XM"
-        XMAKE_THEME=plain "$XM" lua private.xrepo install -y -k shared freetype
         cpanm -v .
       matrix: >
         [

@@ -3,6 +3,7 @@
    "packages" : [
       { "name" : "libsdl3", "kind" : "shared" },
       { "name" : "libsdl3_image", "kind" : "shared" },
+      { "name" : "freetype", "kind" : "shared" },
       { "name" : "libsdl3_ttf", "kind" : "shared" },
       { "name" : "libsdl3_mixer", "kind" : "shared" }
    ]
