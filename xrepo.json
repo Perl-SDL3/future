@@ -1,0 +1,8 @@
+{
+   "name" : "Alien-SDL3",
+   "packages" : [
+      { "name" : "libsdl3", "kind" : "shared" },
+      { "name" : "libsdl3_image", "kind" : "shared" },
+      { "name" : "libsdl3_mixer", "kind" : "shared" }
+   ]
+}
