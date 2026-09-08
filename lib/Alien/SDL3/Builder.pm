@@ -25,7 +25,7 @@ sub ACTION_build {
     $repo->install( 'libsdl3',       undef, kind => 'shared' );
     $repo->install( 'libsdl3_mixer', undef, kind => 'shared' );
     $repo->install( 'libsdl3_image', undef, kind => 'shared' );
-    #~ $repo->install( 'libsdl3_ttf',   undef, kind => 'shared' );
+    $repo->install( 'libsdl3_ttf',   undef, kind => 'shared' );
     #
     $self->SUPER::ACTION_build(@_);
     return 0;

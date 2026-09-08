@@ -9,11 +9,7 @@ class Alien::SDL3 : isa(Alien::Xrepo::Runtime) {
     # installed separately and exposed via the Alien::Build-style `alt()` accessor
     # (e.g. `Alien::SDL3->alt('libsdl3_ttf')->cflags`) or a package-name argument.
     method pkg_name {
-        [   'libsdl3', 'libsdl3_image',
-
-            #'libsdl3_ttf',
-            'libsdl3_mixer'
-        ]
+        [ 'libsdl3', 'libsdl3_image', 'libsdl3_ttf', 'libsdl3_mixer' ]
     }
 
     method install_opts {

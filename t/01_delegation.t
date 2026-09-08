@@ -36,7 +36,7 @@ SKIP: {
     # the primary resolves to $self, so its pkg_name is the full list.
     is $sdl3->alt('libsdl3_image')->pkg_name, 'libsdl3_image', 'alt(secondary) pkg_name is the single name';
 
-    #~ is $sdl3->alt('libsdl3_ttf')->pkg_name,   'libsdl3_ttf',   'alt(ttf) pkg_name is the single name';
+    is $sdl3->alt('libsdl3_ttf')->pkg_name, 'libsdl3_ttf', 'alt(ttf) pkg_name is the single name';
     is $sdl3->alt('libsdl3_mixer')->pkg_name, 'libsdl3_mixer', 'alt(mixer) pkg_name is the single name';
 }
 #
