@@ -1,8 +1,4 @@
--- Local override of the xmake-repo package recipe for libsdl3_ttf. This tree is
--- shipped inside the Exotic::SDL3 distribution under recipes/ and registered as a
--- local xmake repository by Alien::Xrepo::Base (via `install_opts local_repos`).
--- xmake consults locally registered repositories before the bundled xmake-repo,
--- so this recipe wins over the upstream copy.
+-- Local override of the xmake-repo package recipe for libsdl3_ttf.
 --
 -- Deviations from packages/l/libsdl3_ttf/xmake.lua in xmake-repo:
 --   * freetype is forced to a SHARED build. A static libfreetype.a (xmake-built
