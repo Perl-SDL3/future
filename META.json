@@ -29,30 +29,22 @@
    },
    "prereqs" : {
       "build" : {
-         "requires" : {
-            "Alien::Xmake" : "v1.0.0",
-            "Alien::Xrepo" : "v1.0.0",
-            "Alien::Xrepo::Build" : "v1.0.0",
-            "CPAN::Meta" : "0",
-            "ExtUtils::Install" : "0",
-            "ExtUtils::InstallPaths" : "0.002",
-            "JSON::PP" : "2",
-            "Module::Build" : "0",
-            "Path::Tiny" : "0"
-         }
+         "requires" : {}
       },
       "configure" : {
          "requires" : {
             "Alien::Xmake" : "v1.0.0",
             "Alien::Xrepo" : "v1.0.0",
             "Alien::Xrepo::Build" : "v1.0.0",
+            "Alien::Xrepo::MB" : "0",
             "CPAN::Meta" : "0",
             "Config" : "0",
             "ExtUtils::Helpers" : "0.028",
             "IO::Socket::SSL" : "0",
             "JSON::PP" : "2",
             "Module::Build" : "0",
-            "Path::Tiny" : "0"
+            "Path::Tiny" : "0",
+            "perl" : "v5.40.0"
          }
       },
       "runtime" : {
@@ -61,6 +53,7 @@
          },
          "requires" : {
             "Alien::Xrepo::Build" : "v1.0.0",
+            "Alien::Xrepo::Runtime" : "0",
             "File::ShareDir" : "1.00",
             "Path::Tiny" : "0",
             "perl" : "5.040000"
@@ -77,7 +70,8 @@
    },
    "provides" : {
       "Alien::SDL3" : {
-         "file" : "lib/Alien/SDL3.pm"
+         "file" : "lib/Alien/SDL3.pm",
+         "version" : "v1.0.0"
       }
    },
    "release_status" : "testing",
@@ -95,7 +89,7 @@
          "web" : "https://github.com/sanko/future"
       }
    },
-   "version" : "v0.0.1",
+   "version" : "v1.0.0",
    "x_authority" : "cpan:SANKO",
    "x_ignore" : [
       ".tidyallrc",

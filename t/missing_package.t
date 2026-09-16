@@ -3,7 +3,6 @@ use Test2::V0;
 use blib;
 use Alien::SDL3;
 use experimental 'class';
-
 skip_all 'Wrong dist for this';
 #
 # Simulate a build where libsdl3 could not be built/installed (e.g. a missing transitive link
