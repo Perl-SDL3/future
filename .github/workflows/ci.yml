@@ -28,7 +28,7 @@ jobs:
       matrix: >
         [
           {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5"},
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt update; sudo apt install libsdl3-0 libsdl3-image0 libsdl3-ttf0 -y", "name": "libsdl3 from package manager"},
+          {"platform_name":"ubuntu","os":"ubuntu-25.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt update; sudo apt install libsdl3-0 libsdl3-image0 libsdl3-ttf0 -y", "name": "Ubuntu 26.04 w/ libsdl3 from package manager"},
           {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.42.3","configure":"-Duselongdouble","variant":"longdoubles"},
           {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"gcc","perl_version":"5.40.5"},
           {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"clang","perl_version":"5.40.5"},
