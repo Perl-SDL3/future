@@ -49,14 +49,14 @@ jobs:
             arch: x86_64
             toolchain: gcc
             perl_version: '5.40.5'
-            prepare: pkg install -v --accept perl-538 gcc developer/build/make
+            prepare: pkg install -v --accept perl-538 gcc developer/build/make git
           - platform_name: omnios
             os: omnios
             os_version: 'r151056'
             arch: x86_64
             toolchain: gcc
             perl_version: '5.40.5'
-            prepare: pkg install -v --accept perl build-essential
+            prepare: pkg install -v --accept perl build-essential git
     uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
     secrets: inherit
     with:
@@ -77,6 +77,22 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc does not see strncasecmp & friends unless
+        #~ __EXTENSIONS__ is defined, so xmake's from-source core build dies
+        #~ with "implicit declaration of function 'strncasecmp'". Swap the
+        #~ real gcc/g++ aside and put wrappers in their place so every SunOS
+        #~ compile (xmake core and later package builds) gets the flag.
+        if [ "$(uname -s)" = SunOS ]; then
+          mkdir -p /tmp/ccwrap
+          mv /usr/bin/gcc /usr/bin/gcc.real 2>/dev/null || true
+          mv /usr/bin/g++ /usr/bin/g++.real 2>/dev/null || true
+          test -x /usr/bin/gcc.real || { echo 'gcc.real missing' && exit 1; }
+          printf '#!/bin/bash\nexec /usr/bin/gcc.real -D__EXTENSIONS__ "$@"\n' > /tmp/ccwrap/gcc
+          printf '#!/bin/bash\nexec /usr/bin/g++.real -D__EXTENSIONS__ "$@"\n' > /tmp/ccwrap/g++
+          chmod +x /tmp/ccwrap/gcc /tmp/ccwrap/g++
+          ln -sf /tmp/ccwrap/gcc /usr/bin/gcc 2>/dev/null || true
+          ln -sf /tmp/ccwrap/g++ /usr/bin/g++ 2>/dev/null || true
+        fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
