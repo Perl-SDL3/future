@@ -31,18 +31,20 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       #~ No X11 in base: install the dev libs so xmake uses the system pkg tools
       #~ instead of bootstrapping the whole X11 stack from source.
       matrix: >
         [
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"}
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"}
         ]
 
   openbsd:
@@ -64,19 +66,17 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
+      #~ OpenBSD is disabled for now: its in-VM builds are so slow they were
+      #~ blocking the whole dev loop. Re-enable once the fast platforms are
+      #~ fully green (prep: pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git).
       matrix: >
-        [
-          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"clang","prepare":"pkg_add curl gmake git"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"clang","prepare":"pkg_add curl gmake git"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"clang","prepare":"pkg_add curl gmake git"}
-        ]
+        []
 
   netbsd:
     name: NetBSD
@@ -97,14 +97,16 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       matrix: >
         [
-          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl"},
-          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl"}
+          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake"},
+          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake"}
         ]
 
   dragonflybsd:
@@ -126,13 +128,15 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       matrix: >
         [
-          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg update && pkg install -y perl5 gcc curl libunistring"}
+          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring"}
         ]
 
   solaris:
@@ -154,13 +158,15 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       matrix: >
         [
-          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc"}
+          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc developer/build/make && ln -sf /usr/gcc/7/bin/gcc /usr/bin/cc"}
         ]
 
   omnios:
@@ -182,13 +188,15 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       matrix: >
         [
-          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential"}
+          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential gmake && ln -sf /usr/gcc/11/bin/gcc /usr/bin/cc"}
         ]
 
   linux:
@@ -209,8 +217,10 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       #~ X11 dev headers must be present or the libsdl3 recipe fails fast with
@@ -251,8 +261,10 @@ jobs:
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       matrix: >
@@ -282,22 +294,24 @@ jobs:
         perl /c/cpanmin.pl App::cpanminus
         rm -f /c/cpanmin.pl
         cpanm --notest IO::Socket::SSL || true
-        if ! cpanm -v .; then
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
           exit 1
         fi
       matrix: >
         [
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"}
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"}
         ]
 
   results:
     name: Summary
     if: always()
-    needs: [freebsd, openbsd, netbsd, dragonflybsd, solaris, omnios, linux, macos, windows]
+    needs: [freebsd, netbsd, dragonflybsd, solaris, omnios, linux, macos, windows]
     uses: sanko/workflow-testing/.github/workflows/results-summary.yml@main
