@@ -51,7 +51,6 @@ jobs:
     secrets: inherit
     with:
       os_version: ${{ matrix.os_version }}
-      name: ${{ matrix.platform_name }} ${{ matrix.arch }}-${{ matrix.toolchain }}
       matrix: '[{"platform_name":"${{ matrix.platform_name }}","os":"${{ matrix.os }}","arch":"${{ matrix.arch }}","toolchain":"${{ matrix.toolchain }}","perl_version":"${{ matrix.perl_version }}","prepare":"${{ matrix.prepare }}"}]'
       task: |
         perl -V
