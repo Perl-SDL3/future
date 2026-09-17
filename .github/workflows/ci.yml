@@ -20,20 +20,29 @@ jobs:
       os_version: '15.0'
       task: |
         perl -V
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       #~ No X11 in base: install the dev libs so xmake uses the system pkg tools
       #~ instead of bootstrapping the whole X11 stack from source.
       matrix: >
         [
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"}
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl"}
         ]
 
   openbsd:
@@ -44,20 +53,29 @@ jobs:
       os_version: '7.8'
       task: |
         perl -V
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       matrix: >
         [
-          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"clang","prepare":"pkg_add curl"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"clang","prepare":"pkg_add curl"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"clang","prepare":"pkg_add curl"}
+          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"clang","prepare":"pkg_add curl gmake git"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"clang","prepare":"pkg_add curl gmake git"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"clang","prepare":"pkg_add curl gmake git"}
         ]
 
   netbsd:
@@ -68,12 +86,21 @@ jobs:
       os_version: '10.1'
       task: |
         perl -V
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       matrix: >
         [
           {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl"},
@@ -88,15 +115,24 @@ jobs:
       os_version: '6.4.0'
       task: |
         perl -V
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       matrix: >
         [
-          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 gcc curl"}
+          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg update && pkg install -y perl5 gcc curl libunistring"}
         ]
 
   solaris:
@@ -107,15 +143,24 @@ jobs:
       os_version: '11.4'
       task: |
         perl -V
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       matrix: >
         [
-          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -v --accept perl-538 gcc"}
+          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc"}
         ]
 
   omnios:
@@ -126,15 +171,24 @@ jobs:
       os_version: 'r151056'
       task: |
         perl -V
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       matrix: >
         [
-          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -v --accept perl build-essential"}
+          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential"}
         ]
 
   linux:
@@ -144,15 +198,21 @@ jobs:
     with:
       task: |
         perl -V
-        #~ Install cpanm via its canonical self-bootstrap (installs the real
-        #~ `cpanm` binary into the active perl's bin dir). `command -v cpanm`
-        #~ is a hard fail point that catches any no-op.
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       #~ X11 dev headers must be present or the libsdl3 recipe fails fast with
       #~ the exact apt line (see recipes/packages/l/libsdl3/xmake.lua). The
       #~ no-prereq entries below still pass because GitHub-hosted ubuntu images
@@ -180,15 +240,21 @@ jobs:
     with:
       task: |
         perl -V
-        #~ Install cpanm via its canonical self-bootstrap (installs the real
-        #~ `cpanm` binary into the active perl's bin dir). `command -v cpanm`
-        #~ is a hard fail point that catches any no-op.
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
-        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
+        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
+        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
+        #~ install aborts the whole run even though it succeeded. cpanm lands in
+        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
+        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
         command -v cpanm
-        cpanm -v .
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       matrix: >
         [
           {"platform_name":"macos","os":"macos-15","arch":"aarch64","toolchain":"gcc","perl_version":"5.42.3"},
@@ -212,16 +278,22 @@ jobs:
       task: |
         export PATH="/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
         perl -e 'print qq(perl=\$^X :: \$^O\n)'
-        curl -L https://cpanmin.us | perl - App::cpanminus
-        cpanm -v .
+        curl -fsSL https://cpanmin.us -o /c/cpanmin.pl
+        perl /c/cpanmin.pl App::cpanminus
+        rm -f /c/cpanmin.pl
+        cpanm --notest IO::Socket::SSL || true
+        if ! cpanm -v .; then
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -80 "$f"; done
+          exit 1
+        fi
       matrix: >
         [
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"}
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"}
         ]
 
   results:
