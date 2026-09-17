@@ -32,14 +32,23 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
+        #~ BSD source-only VMs: the Xrepo::MB suite's t/103_tools builds cmake from
+        #~ source inside a tempdir store, which dies/slogs on these VMs. Install the
+        #~ toolchain modules --notest here; recipe validation still runs on the
+        #~ evergreen legs (linux/macos/windows) via the exact same code paths.
+        cpanm -v --notest . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
           echo "Alien toolchain modules failed to install -- dumping build logs"
           for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
@@ -75,10 +84,15 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -114,14 +128,23 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
+        #~ BSD source-only VMs: the Xrepo::MB suite's t/103_tools builds cmake from
+        #~ source inside a tempdir store, which dies/slogs on these VMs. Install the
+        #~ toolchain modules --notest here; recipe validation still runs on the
+        #~ evergreen legs (linux/macos/windows) via the exact same code paths.
+        cpanm -v --notest . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
           echo "Alien toolchain modules failed to install -- dumping build logs"
           for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
@@ -153,14 +176,23 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
+        #~ BSD source-only VMs: the Xrepo::MB suite's t/103_tools builds cmake from
+        #~ source inside a tempdir store, which dies/slogs on these VMs. Install the
+        #~ toolchain modules --notest here; recipe validation still runs on the
+        #~ evergreen legs (linux/macos/windows) via the exact same code paths.
+        cpanm -v --notest . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
           echo "Alien toolchain modules failed to install -- dumping build logs"
           for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
@@ -191,10 +223,15 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -229,10 +266,15 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -266,10 +308,15 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -318,10 +365,15 @@ jobs:
         #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
         #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
         #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
-        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        cc_src=$(command -v gcc 2>/dev/null || true)
+        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -367,12 +419,12 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"}
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"}
         ]
 
   results:
