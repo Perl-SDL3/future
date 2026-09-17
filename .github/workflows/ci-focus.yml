@@ -26,7 +26,7 @@ jobs:
             toolchain: gcc
             perl_version: ''
             notest: '1'
-            prepare: pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake
+            prepare: pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git
           - platform_name: netbsd
             os: netbsd
             os_version: '10.1'
@@ -34,7 +34,7 @@ jobs:
             toolchain: gcc
             perl_version: '5.40.5'
             notest: '1'
-            prepare: /usr/sbin/pkg_add perl curl gmake
+            prepare: /usr/sbin/pkg_add perl curl gmake git-base
           - platform_name: dragonflybsd
             os: dragonflybsd
             os_version: '6.4.0'
@@ -42,7 +42,7 @@ jobs:
             toolchain: gcc
             perl_version: '5.40.5'
             notest: '1'
-            prepare: pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring
+            prepare: pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring git
           - platform_name: solaris
             os: solaris
             os_version: '11.4'
@@ -77,22 +77,11 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc does not see strncasecmp & friends unless
-        #~ __EXTENSIONS__ is defined, so xmake's from-source core build dies
-        #~ with "implicit declaration of function 'strncasecmp'". Swap the
-        #~ real gcc/g++ aside and put wrappers in their place so every SunOS
-        #~ compile (xmake core and later package builds) gets the flag.
-        if [ "$(uname -s)" = SunOS ]; then
-          mkdir -p /tmp/ccwrap
-          mv /usr/bin/gcc /usr/bin/gcc.real 2>/dev/null || true
-          mv /usr/bin/g++ /usr/bin/g++.real 2>/dev/null || true
-          test -x /usr/bin/gcc.real || { echo 'gcc.real missing' && exit 1; }
-          printf '#!/bin/bash\nexec /usr/bin/gcc.real -D__EXTENSIONS__ "$@"\n' > /tmp/ccwrap/gcc
-          printf '#!/bin/bash\nexec /usr/bin/g++.real -D__EXTENSIONS__ "$@"\n' > /tmp/ccwrap/g++
-          chmod +x /tmp/ccwrap/gcc /tmp/ccwrap/g++
-          ln -sf /tmp/ccwrap/gcc /usr/bin/gcc 2>/dev/null || true
-          ln -sf /tmp/ccwrap/g++ /usr/bin/g++ 2>/dev/null || true
-        fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS from the environment, so export
+        #~ the define instead of shadowing gcc with wrapper scripts.
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS}"; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
