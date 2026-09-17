@@ -97,6 +97,38 @@ package("libsdl3")
                 package:add("deps", "wayland")
             end
         end
+        if package:is_plat("linux") and not package:is_cross() then
+            -- Fail fast with the apt command instead of letting xrepo bootstrap
+            -- the whole X11 stack from source: those builds are slow and flaky
+            -- (libtool relink races under parallel jobs have wedged CI for hours).
+            -- Each X11 library decides system-vs-source via its own upstream
+            -- recipe's add_extsources, so presence of these -dev packages is
+            -- what makes xrepo use the system libs.
+            local probes = {
+                {"libx11-dev",       "/usr/include/X11/Xlib.h"},
+                {"libxcb1-dev",      "/usr/include/xcb/xcb.h"},
+                {"libxext-dev",      "/usr/include/X11/extensions/shape.h"},
+                {"libxfixes-dev",    "/usr/include/X11/extensions/Xfixes.h"},
+                {"libxcursor-dev",   "/usr/include/X11/Xcursor.h"},
+                {"libxrandr-dev",    "/usr/include/X11/extensions/Xrandr.h"},
+                {"libxi-dev",        "/usr/include/X11/extensions/XInput2.h"},
+                {"libxrender-dev",   "/usr/include/X11/extensions/Xrender.h"},
+                {"libxss-dev",       "/usr/include/X11/extensions/scrnsaver.h"},
+                {"libxkbcommon-dev", "/usr/include/xkbcommon/xkbcommon.h"},
+                {"libwayland-dev",   "/usr/include/wayland-client.h"},
+            }
+            local missing = {}
+            for _, probe in ipairs(probes) do
+                if not os.isfile(probe[2]) then
+                    table.insert(missing, probe[1])
+                end
+            end
+            if #missing > 0 then
+                raise("libsdl3 requires the system X11/Wayland development packages. Missing: %s.\nInstall them with:\n  sudo apt-get update && sudo apt-get install -y %s",
+                      table.concat(missing, ", "),
+                      "libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev")
+            end
+        end
         local libsuffix = package:is_debug() and "d" or ""
         if not package:config("shared") then
             if package:is_plat("windows", "mingw") then
