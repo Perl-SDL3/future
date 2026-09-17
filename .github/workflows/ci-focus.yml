@@ -72,6 +72,11 @@ jobs:
         if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
         echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
+        #~ prerequisite `local` builtin; the run then dies with "please set
+        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
+        #~ for bash for the duration of the toolchain install on SunOS.
+        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
