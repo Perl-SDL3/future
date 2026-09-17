@@ -12,6 +12,113 @@ permissions:
 
 jobs:
 
+  freebsd:
+    name: FreeBSD
+    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
+    secrets: inherit
+    with:
+      os_version: '15.0'
+      task: |
+        perl -V
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+      #~ No X11 in base: install the dev libs so xmake uses the system pkg tools
+      #~ instead of bootstrapping the whole X11 stack from source.
+      matrix: >
+        [
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"}
+        ]
+
+  openbsd:
+    name: OpenBSD
+    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
+    secrets: inherit
+    with:
+      os_version: '7.8'
+      task: |
+        perl -V
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+      matrix: >
+        [
+          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"clang"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"clang"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"clang"}
+        ]
+
+  netbsd:
+    name: NetBSD
+    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
+    secrets: inherit
+    with:
+      os_version: '10.1'
+      task: |
+        perl -V
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+      matrix: >
+        [
+          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl"},
+          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl"}
+        ]
+
+  dragonflybsd:
+    name: DragonFly BSD
+    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
+    secrets: inherit
+    with:
+      os_version: '6.4.0'
+      task: |
+        perl -V
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+      matrix: >
+        [
+          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 gcc"}
+        ]
+
+  solaris:
+    name: Solaris
+    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
+    secrets: inherit
+    with:
+      os_version: '11.4'
+      task: |
+        perl -V
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+      matrix: >
+        [
+          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -v --accept perl-538 gcc"}
+        ]
+
+  omnios:
+    name: OmniOS
+    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
+    secrets: inherit
+    with:
+      os_version: 'r151056'
+      task: |
+        perl -V
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+      matrix: >
+        [
+          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -v --accept perl build-essential"}
+        ]
+
   linux:
     name: Linux
     uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
@@ -25,14 +132,22 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
         cpanm -v .
+      #~ X11 dev packages must be present or the libsdl3 recipe fails fast with
+      #~ the exact apt line (see recipes/packages/l/libsdl3/xmake.lua). Entries
+      #~ without them are EXPECTED failures proving the guard fires instead of
+      #~ wedging for hours on the from-source X11 bootstrap.
       matrix: >
         [
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxext-dev libxrender-dev libxcursor-dev libxrandr-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu","os":"ubuntu-26.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt update; sudo apt install libsdl3-0 libsdl3-image0 libsdl3-ttf0 -y", "name": "Ubuntu 26.04 w/ libsdl3 from package manager"},
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.42.3","configure":"-Duselongdouble","variant":"longdoubles","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxext-dev libxrender-dev libxcursor-dev libxrandr-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxext-dev libxrender-dev libxcursor-dev libxrandr-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxext-dev libxrender-dev libxcursor-dev libxrandr-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxext-dev libxrender-dev libxcursor-dev libxrandr-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"}
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
+          {"platform_name":"ubuntu","os":"ubuntu-26.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libsdl3-0 libsdl3-image0 libsdl3-ttf0", "name": "Ubuntu 26.04 w/ libsdl3 from package manager"},
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.42.3","configure":"-Duselongdouble","variant":"longdoubles","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
+          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
+          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
+          {"platform_name":"ubuntu-riscv","os":"ubuntu-24.04-riscv","arch":"riscv64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
+          {"platform_name":"ubuntu-riscv","os":"ubuntu-24.04-riscv","arch":"riscv64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5", "name": "no X11 prereqs (expected fail-fast)"},
+          {"platform_name":"ubuntu","os":"ubuntu-26.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt update; sudo apt install libsdl3-0 libsdl3-image0 libsdl3-ttf0 -y", "name": "26.04 runtimes only, no X11 dev (expected fail-fast)"}
         ]
 
   macos:
@@ -76,11 +191,15 @@ jobs:
       matrix: >
         [
           {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install strawberryperl"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm strawberryperl"}
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm strawberryperl"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install strawberryperl"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install strawberryperl"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm strawberryperl"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install strawberryperl"}
         ]
 
   results:
     name: Summary
     if: always()
-    needs: [linux, macos, windows]
+    needs: [freebsd, openbsd, netbsd, dragonflybsd, solaris, omnios, linux, macos, windows]
     uses: sanko/workflow-testing/.github/workflows/results-summary.yml@main
