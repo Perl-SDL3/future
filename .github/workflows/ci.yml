@@ -21,16 +21,19 @@ jobs:
       task: |
         perl -V
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
       #~ No X11 in base: install the dev libs so xmake uses the system pkg tools
       #~ instead of bootstrapping the whole X11 stack from source.
       matrix: >
         [
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libxext libXfixes libXcursor libXrandr libXi libXrender libxscrnsaver libxkbcommon wayland xorgproto pkgconf"}
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf"}
         ]
 
   openbsd:
@@ -42,16 +45,19 @@ jobs:
       task: |
         perl -V
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
       matrix: >
         [
-          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"clang"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"clang"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19"},
-          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"clang"}
+          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"x86_64","toolchain":"clang","prepare":"pkg_add curl"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"aarch64","toolchain":"clang","prepare":"pkg_add curl"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"egcc","prepare":"pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl"},
+          {"platform_name":"openbsd","os":"openbsd","arch":"riscv64","toolchain":"clang","prepare":"pkg_add curl"}
         ]
 
   netbsd:
@@ -63,12 +69,15 @@ jobs:
       task: |
         perl -V
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
       matrix: >
         [
-          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl"},
-          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl"}
+          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl"},
+          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl"}
         ]
 
   dragonflybsd:
@@ -80,11 +89,14 @@ jobs:
       task: |
         perl -V
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
       matrix: >
         [
-          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 gcc"}
+          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 gcc curl"}
         ]
 
   solaris:
@@ -96,6 +108,9 @@ jobs:
       task: |
         perl -V
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
       matrix: >
@@ -112,6 +127,9 @@ jobs:
       task: |
         perl -V
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
       matrix: >
@@ -130,12 +148,17 @@ jobs:
         #~ `cpanm` binary into the active perl's bin dir). `command -v cpanm`
         #~ is a hard fail point that catches any no-op.
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
-      #~ X11 dev packages must be present or the libsdl3 recipe fails fast with
-      #~ the exact apt line (see recipes/packages/l/libsdl3/xmake.lua). Entries
-      #~ without them are EXPECTED failures proving the guard fires instead of
-      #~ wedging for hours on the from-source X11 bootstrap.
+      #~ X11 dev headers must be present or the libsdl3 recipe fails fast with
+      #~ the exact apt line (see recipes/packages/l/libsdl3/xmake.lua). The
+      #~ no-prereq entries below still pass because GitHub-hosted ubuntu images
+      #~ pre-ship the X11 dev headers, so xmake picks the system libs; on any
+      #~ image without them the guard fires instead of wedging for hours on the
+      #~ from-source X11 bootstrap.
       matrix: >
         [
           {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
@@ -146,8 +169,8 @@ jobs:
           {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
           {"platform_name":"ubuntu-riscv","os":"ubuntu-24.04-riscv","arch":"riscv64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
           {"platform_name":"ubuntu-riscv","os":"ubuntu-24.04-riscv","arch":"riscv64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5", "name": "no X11 prereqs (expected fail-fast)"},
-          {"platform_name":"ubuntu","os":"ubuntu-26.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt update; sudo apt install libsdl3-0 libsdl3-image0 libsdl3-ttf0 -y", "name": "26.04 runtimes only, no X11 dev (expected fail-fast)"}
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5", "name": "no X11 dev pkgs (runner provides headers)"},
+          {"platform_name":"ubuntu","os":"ubuntu-26.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt update; sudo apt install libsdl3-0 libsdl3-image0 libsdl3-ttf0 -y", "name": "26.04 runtimes only (runner provides headers)"}
         ]
 
   macos:
@@ -161,6 +184,9 @@ jobs:
         #~ `cpanm` binary into the active perl's bin dir). `command -v cpanm`
         #~ is a hard fail point that catches any no-op.
         curl -L https://cpanmin.us | perl - App::cpanminus
+        #~ Self-bootstrap writes `cpanm` into the active perl's bin dir, which is
+        #~ not on PATH everywhere (Solaris/OmniOS site bin). Re-export it.
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$PATH"
         command -v cpanm
         cpanm -v .
       matrix: >
@@ -190,12 +216,12 @@ jobs:
         cpanm -v .
       matrix: >
         [
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install strawberryperl"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm strawberryperl"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install strawberryperl"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install strawberryperl"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm strawberryperl"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install strawberryperl"}
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && mkdir -p /c/Strawberry && tar -xf /c/strawberry.zip -C /c/Strawberry && if [ -d /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable ]; then mv /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable/* /c/Strawberry/ && rmdir /c/Strawberry/strawberry-perl-5.40.5.1-64bit-portable; fi && rm -f /c/strawberry.zip"}
         ]
 
   results:
