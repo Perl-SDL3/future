@@ -29,7 +29,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -64,7 +72,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -95,7 +111,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -126,7 +150,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -156,7 +188,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -166,7 +206,7 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc developer/build/make && ln -sf /usr/gcc/7/bin/gcc /usr/bin/cc"}
+          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc developer/build/make"}
         ]
 
   omnios:
@@ -186,7 +226,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -196,7 +244,7 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential gmake && ln -sf /usr/gcc/11/bin/gcc /usr/bin/cc"}
+          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential"}
         ]
 
   linux:
@@ -215,7 +263,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -259,7 +315,15 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
+        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
+        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
         command -v cpanm
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -293,6 +357,7 @@ jobs:
         curl -fsSL https://cpanmin.us -o /c/cpanmin.pl
         perl /c/cpanmin.pl App::cpanminus
         rm -f /c/cpanmin.pl
+        export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
         cpanm -v . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
@@ -302,12 +367,12 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip"}
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"}
         ]
 
   results:

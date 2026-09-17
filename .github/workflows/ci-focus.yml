@@ -1,0 +1,109 @@
+name: focus
+
+#~ Temporary fast-iteration matrix for the stubborn platforms (Solaris, OmniOS,
+#~ DragonFly, Windows, FreeBSD) while the slow ones stay disabled in ci.yml.
+#~ Delete once everything is green.
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-focus.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  vms:
+    name: ${{ matrix.platform_name }} ${{ matrix.arch }}-${{ matrix.toolchain }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform_name: freebsd
+            os: freebsd
+            os_version: '15.0'
+            arch: x86_64
+            toolchain: gcc
+            perl_version: ''
+            prepare: pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake
+          - platform_name: dragonflybsd
+            os: dragonflybsd
+            os_version: '6.4.0'
+            arch: x86_64
+            toolchain: gcc
+            perl_version: '5.40.5'
+            prepare: pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring
+          - platform_name: solaris
+            os: solaris
+            os_version: '11.4'
+            arch: x86_64
+            toolchain: gcc
+            perl_version: '5.40.5'
+            prepare: pkg install -v --accept perl-538 gcc developer/build/make
+          - platform_name: omnios
+            os: omnios
+            os_version: 'r151056'
+            arch: x86_64
+            toolchain: gcc
+            perl_version: '5.40.5'
+            prepare: pkg install -v --accept perl build-essential
+    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
+    secrets: inherit
+    with:
+      os_version: ${{ matrix.os_version }}
+      name: ${{ matrix.platform_name }} ${{ matrix.arch }}-${{ matrix.toolchain }}
+      matrix: '[{"platform_name":"${{ matrix.platform_name }}","os":"${{ matrix.os }}","arch":"${{ matrix.arch }}","toolchain":"${{ matrix.toolchain }}","perl_version":"${{ matrix.perl_version }}","prepare":"${{ matrix.prepare }}"}]'
+      task: |
+        perl -V
+        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
+        perl /tmp/cpanmin.pl App::cpanminus
+        rm -f /tmp/cpanmin.pl
+        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
+        gcc_path=$(perl -MFile::Find -e 'my $p; find(sub{ if (!$p && -f $_) { $p = $File::Find::name } }, "/usr/gcc"); print $p if $p' 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
+        command -v cpanm
+        export XMAKE_ROOT=y
+        cpanm --notest IO::Socket::SSL || true
+        cpanm -v . || true
+        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+          echo "Alien toolchain modules failed to install -- dumping build logs"
+          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; cat "$f"; done
+          exit 1
+        fi
+  win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: prepare
+        shell: bash
+        run: |
+          curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip
+          powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop
+          rm -f /c/strawberry.zip
+          ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe
+          choco install make -y
+      - name: force strawberry on path
+        shell: bash
+        run: |
+          echo "/c/Strawberry/perl/site/bin" >> "$GITHUB_PATH"
+          echo "/c/Strawberry/perl/bin" >> "$GITHUB_PATH"
+          echo "/c/Strawberry/c/bin" >> "$GITHUB_PATH"
+          echo "XMAKE_ROOT=y" >> "$GITHUB_ENV"
+      - name: build
+        shell: bash
+        run: |
+          set -e
+          export PATH="/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
+          perl -e 'print qq(perl=\$^X :: \$^O\n)'
+          curl -fsSL https://cpanmin.us -o /c/cpanmin.pl
+          perl /c/cpanmin.pl App::cpanminus
+          rm -f /c/cpanmin.pl
+          cpanm --notest IO::Socket::SSL || true
+          cpanm -v . || true
+          if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+            echo "Alien toolchain modules failed to install -- dumping build logs"
+            for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; cat "$f"; done
+            exit 1
+          fi
