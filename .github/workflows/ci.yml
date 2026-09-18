@@ -1,15 +1,4 @@
-name: CI
-
-on:
-  pull_request: ~
-  push:
-    branches: [main, dev, dev-repair]
-  workflow_dispatch: ~
-
-permissions:
-  contents: read
-  actions: read
-
+---
 jobs:
 
   freebsd:
@@ -29,47 +18,22 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang: point /usr/bin/cc at
+        #~ the real gcc when there is no /usr/bin/cc.
+        gcc_path=$(command -v gcc 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        #~ BSD source-only VMs: the Xrepo::MB suite's t/103_tools builds cmake from
-        #~ source inside a tempdir store, which dies/slogs on these VMs. Install the
-        #~ toolchain modules --notest here; recipe validation still runs on the
-        #~ evergreen legs (linux/macos/windows) via the exact same code paths.
-        cpanm -v --notest . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
+        cpanm --notest IO::Socket::SSL
+        cpanm -v .
       #~ No X11 in base: install the dev libs so xmake uses the system pkg tools
       #~ instead of bootstrapping the whole X11 stack from source.
       matrix: >
         [
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"}
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"}
         ]
 
   openbsd:
@@ -89,35 +53,16 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang: point /usr/bin/cc at
+        #~ the real gcc when there is no /usr/bin/cc.
+        gcc_path=$(command -v gcc 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
+        cpanm --notest IO::Socket::SSL
+        cpanm -v .
       #~ OpenBSD is disabled for now: its in-VM builds are so slow they were
       #~ blocking the whole dev loop. Re-enable once the fast platforms are
       #~ fully green (prep: pkg_add gcc-11.2.0p19 g++-11.2.0p19 curl gmake git).
@@ -141,43 +86,19 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang: point /usr/bin/cc at
+        #~ the real gcc when there is no /usr/bin/cc.
+        gcc_path=$(command -v gcc 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        #~ BSD source-only VMs: the Xrepo::MB suite's t/103_tools builds cmake from
-        #~ source inside a tempdir store, which dies/slogs on these VMs. Install the
-        #~ toolchain modules --notest here; recipe validation still runs on the
-        #~ evergreen legs (linux/macos/windows) via the exact same code paths.
-        cpanm -v --notest . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
+        cpanm --notest IO::Socket::SSL
+        cpanm -v .
       matrix: >
         [
-          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake git-base"},
-          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake git-base"}
+          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake"}
         ]
 
   dragonflybsd:
@@ -197,42 +118,19 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang: point /usr/bin/cc at
+        #~ the real gcc when there is no /usr/bin/cc.
+        gcc_path=$(command -v gcc 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        #~ BSD source-only VMs: the Xrepo::MB suite's t/103_tools builds cmake from
-        #~ source inside a tempdir store, which dies/slogs on these VMs. Install the
-        #~ toolchain modules --notest here; recipe validation still runs on the
-        #~ evergreen legs (linux/macos/windows) via the exact same code paths.
-        cpanm -v --notest . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
+        cpanm --notest IO::Socket::SSL
+        cpanm -v .
       matrix: >
         [
-          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring git"}
+          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring"}
         ]
 
   solaris:
@@ -252,270 +150,96 @@ jobs:
         perl /tmp/cpanmin.pl App::cpanminus
         rm -f /tmp/cpanmin.pl
         export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
+        #~ Alien::Xmake probes `cc` first, then gcc/clang: point /usr/bin/cc at
+        #~ the real gcc when there is no /usr/bin/cc.
+        gcc_path=$(command -v gcc 2>/dev/null || true)
+        if [ -n "$gcc_path" ] && [ ! -e /usr/bin/cc ]; then ln -sf "$gcc_path" /usr/bin/cc 2>/dev/null || true; fi
+        echo "cc=$(command -v cc || true) gcc=$(command -v gcc || true) make=$(command -v make || true) gmake=$(command -v gmake || true)"
         echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        #~ SunOS/illumos source-only VMs skip their test phase too: xrepo's
-        #~ libpng recipe fails to extract (scripts/pnglibconf.h.prebuilt not
-        #~ found) on these hosts. Recipe validation still runs on the evergreen
-        #~ legs (linux/macos/windows) via the exact same code paths.
-        cpanm -v --notest . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
+        cpanm --notest IO::Socket::SSL
+        cpanm -v .
       matrix: >
         [
-          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc developer/build/make git"}
-        ]
-
-  omnios:
-    name: OmniOS
-    uses: sanko/workflow-testing/.github/workflows/run-vm.yml@main
-    secrets: inherit
-    with:
-      os_version: 'r151056'
-      task: |
-        perl -V
-        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
-        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
-        #~ install aborts the whole run even though it succeeded. cpanm lands in
-        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
-        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
-        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
-        perl /tmp/cpanmin.pl App::cpanminus
-        rm -f /tmp/cpanmin.pl
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
-        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
-        command -v cpanm
-        export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        #~ SunOS/illumos source-only VMs skip their test phase too: xrepo's
-        #~ libpng recipe fails to extract (scripts/pnglibconf.h.prebuilt not
-        #~ found) on these hosts. Recipe validation still runs on the evergreen
-        #~ legs (linux/macos/windows) via the exact same code paths.
-        cpanm -v --notest . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
-      matrix: >
-        [
-          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential git"}
+          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc developer/build/make bash"}
         ]
 
   linux:
     name: Linux
-    uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
     secrets: inherit
+    uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
     with:
+      matrix: |
+        [
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5"},
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.42.3","configure":"-Duselongdouble","variant":"longdoubles"},
+          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"gcc","perl_version":"5.40.5"},
+          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"clang","perl_version":"5.40.5"},
+          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"clang","perl_version":"5.40.5"}
+        ]
       task: |
         perl -V
-        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
-        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
-        #~ install aborts the whole run even though it succeeded. cpanm lands in
-        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
-        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
-        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
-        perl /tmp/cpanmin.pl App::cpanminus
-        rm -f /tmp/cpanmin.pl
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
-        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
+        #~ Install cpanm via its canonical self-bootstrap (installs the real
+        #~ `cpanm` binary into the active perl's bin dir). `command -v cpanm`
+        #~ is a hard fail point that catches any no-op.
+        curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
-        export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
-      #~ X11 dev headers must be present or the libsdl3 recipe fails fast with
-      #~ the exact apt line (see recipes/packages/l/libsdl3/xmake.lua). The
-      #~ no-prereq entries below still pass because GitHub-hosted ubuntu images
-      #~ pre-ship the X11 dev headers, so xmake picks the system libs; on any
-      #~ image without them the guard fires instead of wedging for hours on the
-      #~ from-source X11 bootstrap.
-      matrix: >
-        [
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu","os":"ubuntu-26.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libsdl3-0 libsdl3-image0 libsdl3-ttf0", "name": "Ubuntu 26.04 w/ libsdl3 from package manager"},
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.42.3","configure":"-Duselongdouble","variant":"longdoubles","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu-arm","os":"ubuntu-24.04-arm","arch":"aarch64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu-riscv","os":"ubuntu-24.04-riscv","arch":"riscv64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu-riscv","os":"ubuntu-24.04-riscv","arch":"riscv64","toolchain":"clang","perl_version":"5.40.5","prepare":"sudo apt-get update; sudo apt-get install -y libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev"},
-          {"platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5", "name": "no X11 dev pkgs (runner provides headers)"},
-          {"platform_name":"ubuntu","os":"ubuntu-26.04","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"sudo apt update; sudo apt install libsdl3-0 libsdl3-image0 libsdl3-ttf0 -y", "name": "26.04 runtimes only (runner provides headers)"}
-        ]
-
+        cpanm -v .
   macos:
     name: macOS
-    uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
     secrets: inherit
+    uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
     with:
-      task: |
-        perl -V
-        #~ Bootstrap cpanm via a file download, never `curl | perl`: some remote
-        #~ sh's run under pipefail, and curl's EPIPE (23) after a clean pipe
-        #~ install aborts the whole run even though it succeeded. cpanm lands in
-        #~ the active perl's sitebin/scriptdir, which is not on PATH everywhere
-        #~ (Solaris/OmniOS site bin), so re-export those dirs first.
-        curl -fsSL https://cpanmin.us -o /tmp/cpanmin.pl
-        perl /tmp/cpanmin.pl App::cpanminus
-        rm -f /tmp/cpanmin.pl
-        export PATH="$(dirname "$(perl -e 'print $^X')"):$(perl -MConfig -e 'print "$Config{sitebin}:$Config{scriptdir}:"' 2>/dev/null):$PATH"
-        #~ Alien::Xmake probes `cc` first, then gcc/clang. On Solaris/OmniOS there
-        #~ is no `cc` at all and a missing first candidate makes IPC::Open3 die
-        #~ before it ever tries gcc, so point /usr/bin/cc at the real gcc.
-        cc_src=$(command -v gcc 2>/dev/null || true)
-        if [ "$(uname -s)" = SunOS ] && [ -n "$cc_src" ]; then ln -sf "$cc_src" /usr/bin/cc 2>/dev/null || true; fi
-        echo "cc=$(command -v cc || true) gcc=$cc_src make=$(command -v make || true) gmake=$(command -v gmake || true)"
-        echo 'int main(){return 0;}' | cc -xc - -o /dev/null - 2>/dev/null && echo 'cc compile OK' || echo 'cc compile FAILED'
-        #~ SunOS /bin/sh is ksh93 in POSIX mode, which lacks xmake's configure
-        #~ prerequisite `local` builtin; the run then dies with "please set
-        #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
-        #~ for bash for the duration of the toolchain install on SunOS.
-        if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
-        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
-        #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
-        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
-        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
-        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
-        #~ both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
-        command -v cpanm
-        export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
-      matrix: >
+      matrix: |
         [
           {"platform_name":"macos","os":"macos-15","arch":"aarch64","toolchain":"gcc","perl_version":"5.42.3"},
-          {"platform_name":"macos","os":"macos-15","arch":"aarch64","toolchain":"gcc","perl_version":"5.42.3", "prepare": "brew install sdl3", "name": "libsdl installed from brew"},
           {"platform_name":"macos-intel","os":"macos-15-intel","arch":"x86_64","toolchain":"gcc","perl_version":"5.42.3"},
           {"platform_name":"macos","os":"macos-15","arch":"aarch64","toolchain":"clang","perl_version":"5.42.3"},
           {"platform_name":"macos-intel","os":"macos-15-intel","arch":"x86_64","toolchain":"clang","perl_version":"5.42.3"}
         ]
-
+      task: |
+        perl -V
+        #~ Install cpanm via its canonical self-bootstrap (installs the real
+        #~ `cpanm` binary into the active perl's bin dir). `command -v cpanm`
+        #~ is a hard fail point that catches any no-op.
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+  results:
+    if: always()
+    name: Summary
+    needs:
+      - linux
+      - macos
+      - windows
+    uses: sanko/workflow-testing/.github/workflows/results-summary.yml@main
   windows:
     name: Windows
-    uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
     secrets: inherit
+    uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
     with:
-      #~ This task runs under git-bash (run-direct.yml `shell: bash`), but
-      #~ native xmake.exe spawns from deep perl-under-bash chains fail with
-      #~ "Inappropriate I/O control operation" (EINVAL on CreateProcess). That
-      #~ is a CI-env artifact, not a code bug: t/00-05 pass under PowerShell
-      #~ (native Win32 spawning), which is what the passing 0.08 release used.
-      #~ So build + test on PowerShell, keeping strawberry perl on PATH.
+      matrix: |
+        [
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install strawberryperl"},
+          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm strawberryperl"},
+          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"}
+        ]
       task: |
         export PATH="/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
         perl -e 'print qq(perl=\$^X :: \$^O\n)'
-        curl -fsSL https://cpanmin.us -o /c/cpanmin.pl
-        perl /c/cpanmin.pl App::cpanminus
-        rm -f /c/cpanmin.pl
-        export XMAKE_ROOT=y
-        cpanm --notest IO::Socket::SSL || true
-        if [ "$RUNNER_ARCH" = "ARM64" ]; then
-          #~ windows-arm runs x64 Strawberry under ARM64 emulation (no ARM64
-          #~ Strawberry build exists). xmake and every subprocess it spawns
-          #~ (the compilers for its from-source packages) also run x64-emulated,
-          #~ and xmake's require/drop-in reliably fails there: xrepo installs
-          #~ die with `package(...): links not found!`, `error: execv(...)
-          #~ failed(-1), unknown reason`, and Alien::Xrepo then reports
-          #~ `Can't spawn "...xmake.exe": No error` (Alien/Xrepo.pm:147). The
-          #~ pure-Perl toolchain modules install fine, so this leg installs
-          #~ them from CPAN and runs the module guard; the x64 windows leg
-          #~ still runs the full test suite and the local Alien-SDL3 build.
-          cpanm -v --notest Alien::Xmake || { echo 'Alien::Xmake install failed'; for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done; exit 1; }
-          cpanm -v --notest Alien::Xrepo || { echo 'Alien::Xrepo install failed'; for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done; exit 1; }
-        else
-          cpanm -v . || true
-        fi
-        if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
-          echo "Alien toolchain modules failed to install -- dumping build logs"
-          for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
-          exit 1
-        fi
-      matrix: >
-        [
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"gcc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"clang","prepare":"choco install llvm make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"},
-          {"platform_name":"windows-arm","os":"windows-11-arm","arch":"aarch64","toolchain":"msvc","prepare":"choco install make -y; curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip && rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop; rm -f /c/strawberry.zip && ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe"}
-        ]
-
-  results:
-    name: Summary
-    if: always()
-    needs: [freebsd, netbsd, dragonflybsd, solaris, omnios, linux, macos, windows]
-    uses: sanko/workflow-testing/.github/workflows/results-summary.yml@main
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        command -v cpanm
+        cpanm -v .
+name: CI
+on:
+  pull_request: ~
+  push:
+    branches:
+      - main
+      - dev
+      - dev-repair
+  workflow_dispatch: ~
+permissions:
+  actions: read
+  contents: read
