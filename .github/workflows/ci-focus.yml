@@ -86,7 +86,7 @@ jobs:
         #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its
         #~ socket symbols and, on OmniOS, libsendfile for sendfile64 (Solaris
         #~ resolves both from libc).
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="-l:libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
