@@ -81,9 +81,12 @@ jobs:
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
         #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
         #~ is defined, which breaks xmake's from-source core build. xmake's
-        #~ configure merges $CFLAGS/$CXXFLAGS from the environment, so export
-        #~ the define instead of shadowing gcc with wrapper scripts.
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; fi
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its
+        #~ socket symbols and, on OmniOS, libsendfile for sendfile64 (Solaris
+        #~ resolves both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="-l:libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
