@@ -483,14 +483,22 @@ jobs:
         rm -f /c/cpanmin.pl
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
-        #~ windows-arm runs x64 Strawberry under ARM64 emulation (no ARM64 build
-        #~ exists). There the x64-emulated xmake.exe cannot be spawned by
-        #~ Alien::Xrepo's system(LIST) install call -- CreateProcess fails with
-        #~ "Can't spawn ... No error" at Alien/Xrepo.pm line 147 -- so skip the
-        #~ test phase on ARM64 only, like the SunOS VMs. Install + guard still run.
-        notest=
-        if [ "$RUNNER_ARCH" = "ARM64" ]; then notest=--notest; fi
-        cpanm -v $notest . || true
+        if [ "$RUNNER_ARCH" = "ARM64" ]; then
+          #~ windows-arm runs x64 Strawberry under ARM64 emulation (no ARM64
+          #~ Strawberry build exists). xmake and every subprocess it spawns
+          #~ (the compilers for its from-source packages) also run x64-emulated,
+          #~ and xmake's require/drop-in reliably fails there: xrepo installs
+          #~ die with `package(...): links not found!`, `error: execv(...)
+          #~ failed(-1), unknown reason`, and Alien::Xrepo then reports
+          #~ `Can't spawn "...xmake.exe": No error` (Alien/Xrepo.pm:147). The
+          #~ pure-Perl toolchain modules install fine, so this leg installs
+          #~ them from CPAN and runs the module guard; the x64 windows leg
+          #~ still runs the full test suite and the local Alien-SDL3 build.
+          cpanm -v --notest Alien::Xmake || { echo 'Alien::Xmake install failed'; for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done; exit 1; }
+          cpanm -v --notest Alien::Xrepo || { echo 'Alien::Xrepo install failed'; for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done; exit 1; }
+        else
+          cpanm -v . || true
+        fi
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
           echo "Alien toolchain modules failed to install -- dumping build logs"
           for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
