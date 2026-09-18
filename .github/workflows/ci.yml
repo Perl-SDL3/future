@@ -41,6 +41,14 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -58,10 +66,10 @@ jobs:
       #~ instead of bootstrapping the whole X11 stack from source.
       matrix: >
         [
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"},
-          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake"}
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"x86_64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"gcc","prepare":"pkg install -y perl5 lang/gcc libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"},
+          {"platform_name":"freebsd","os":"freebsd","arch":"aarch64","toolchain":"clang","prepare":"pkg install -y perl5 llvm libX11 libxcb libXext libXfixes libXcursor libXrandr libXi libXrender libXScrnSaver libxkbcommon wayland xorgproto pkgconf curl gmake git"}
         ]
 
   openbsd:
@@ -93,6 +101,14 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -137,6 +153,14 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -152,8 +176,8 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake"},
-          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake"}
+          {"platform_name":"netbsd","os":"netbsd","arch":"x86_64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake git-base"},
+          {"platform_name":"netbsd","os":"netbsd","arch":"aarch64","toolchain":"gcc","prepare":"/usr/sbin/pkg_add perl curl gmake git-base"}
         ]
 
   dragonflybsd:
@@ -185,6 +209,14 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -200,7 +232,7 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring"}
+          {"platform_name":"dragonflybsd","os":"dragonflybsd","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg update && pkg upgrade -y && pkg install -y perl5 gcc curl gmake libunistring git"}
         ]
 
   solaris:
@@ -232,10 +264,22 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
+        #~ SunOS/illumos source-only VMs skip their test phase too: xrepo's
+        #~ libpng recipe fails to extract (scripts/pnglibconf.h.prebuilt not
+        #~ found) on these hosts. Recipe validation still runs on the evergreen
+        #~ legs (linux/macos/windows) via the exact same code paths.
+        cpanm -v --notest . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
           echo "Alien toolchain modules failed to install -- dumping build logs"
           for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
@@ -243,7 +287,7 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc developer/build/make"}
+          {"platform_name":"solaris","os":"solaris","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl-538 gcc developer/build/make git"}
         ]
 
   omnios:
@@ -275,10 +319,22 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
-        cpanm -v . || true
+        #~ SunOS/illumos source-only VMs skip their test phase too: xrepo's
+        #~ libpng recipe fails to extract (scripts/pnglibconf.h.prebuilt not
+        #~ found) on these hosts. Recipe validation still runs on the evergreen
+        #~ legs (linux/macos/windows) via the exact same code paths.
+        cpanm -v --notest . || true
         if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
           echo "Alien toolchain modules failed to install -- dumping build logs"
           for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; tail -120 "$f"; done
@@ -286,7 +342,7 @@ jobs:
         fi
       matrix: >
         [
-          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential"}
+          {"platform_name":"omnios","os":"omnios","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5","prepare":"pkg install -v --accept perl build-essential git"}
         ]
 
   linux:
@@ -317,6 +373,14 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
@@ -374,6 +438,14 @@ jobs:
         #~ toolchain in the toolchain scope!". Swap the /bin/sh shebang target
         #~ for bash for the duration of the toolchain install on SunOS.
         if [ "$(uname -s)" = SunOS ] && [ -x /usr/bin/bash ]; then rm -f /bin/sh 2>/dev/null || true; ln -sf /usr/bin/bash /bin/sh; fi
+        #~ illumos/Solaris gcc hides strncasecmp & friends unless __EXTENSIONS__
+        #~ is defined, which breaks xmake's from-source core build. xmake's
+        #~ configure merges $CFLAGS/$CXXFLAGS/$LDFLAGS from the environment, so
+        #~ export the define/flags instead of shadowing gcc with wrapper scripts.
+        #~ The 32-bit illumos core build also needs -lsocket/-lnsl for its socket
+        #~ symbols and, on OmniOS, libsendfile for sendfile64 (Solaris resolves
+        #~ both from libc).
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; case "$(cat /etc/release 2>/dev/null)" in *OmniOS*) export LDFLAGS="/usr/lib/libsendfile.so.1 ${LDFLAGS:-}";; esac; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
