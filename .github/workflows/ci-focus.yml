@@ -157,17 +157,25 @@ jobs:
           echo "XMAKE_ROOT=y" >> "$GITHUB_ENV"
       - name: build
         shell: bash
+        timeout-minutes: 35
         run: |
           set -e
           export PATH="/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
           perl -e 'print qq(perl=\$^X :: \$^O :: arch=\$ENV{RUNNER_ARCH}\n)'
-          curl -fsSL https://cpanmin.us -o /c/cpanmin.pl
-          perl /c/cpanmin.pl App::cpanminus
+          echo 'PHASE curl-cpanmin'
+          timeout 120 curl -fsSL https://cpanmin.us -o /c/cpanmin.pl || { echo 'PHASE_FAIL curl-cpanmin'; exit 1; }
+          echo 'PHASE cpanminus'
+          timeout 300 perl /c/cpanmin.pl App::cpanminus || { echo 'PHASE_FAIL cpanminus'; exit 1; }
           rm -f /c/cpanmin.pl
-          cpanm --notest IO::Socket::SSL || true
+          echo 'PHASE IO-SSL'
+          timeout 300 cpanm --notest IO::Socket::SSL || true
+          export XMAKE_ROOT=y
           #~ x64-emulated xmake.exe can't be spawned by Alien::Xrepo's
           #~ system(LIST) install call on ARM64, so skip the test phase there.
-          cpanm -v --notest . || true
+          #~ The --notest install path deterministically HANGS inside the local
+          #~ dist build afterwards, so bound it and fail fast for diagnosis.
+          echo 'PHASE dist-install-notest'
+          timeout 900 cpanm -v --notest . || { echo 'PHASE_FAIL dist-install-notest'; exit 1; }
           if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
             echo "Alien toolchain modules failed to install -- dumping build logs"
             for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; cat "$f"; done
