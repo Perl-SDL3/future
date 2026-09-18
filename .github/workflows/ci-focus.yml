@@ -81,7 +81,7 @@ jobs:
         #~ is defined, which breaks xmake's from-source core build. xmake's
         #~ configure merges $CFLAGS/$CXXFLAGS from the environment, so export
         #~ the define instead of shadowing gcc with wrapper scripts.
-        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}"; fi
+        if [ "$(uname -s)" = SunOS ]; then export CFLAGS="-D__EXTENSIONS__ ${CFLAGS:-}" CXXFLAGS="-D__EXTENSIONS__ ${CXXFLAGS:-}" LDFLAGS="-lsocket -lnsl ${LDFLAGS:-}"; fi
         command -v cpanm
         export XMAKE_ROOT=y
         cpanm --notest IO::Socket::SSL || true
