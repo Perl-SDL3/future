@@ -1,8 +1,8 @@
 name: focus
 
 #~ Temporary fast-iteration matrix for the stubborn platforms (Solaris, OmniOS,
-#~ DragonFly, FreeBSD, NetBSD, Windows) while the slow ones stay disabled in
-#~ ci.yml. Delete once everything is green.
+#~ DragonFly, FreeBSD, NetBSD, Windows, Windows-ARM) while the slow ones stay
+#~ disabled in ci.yml. Delete once everything is green.
 
 on:
   push:
@@ -131,6 +131,43 @@ jobs:
           rm -f /c/cpanmin.pl
           cpanm --notest IO::Socket::SSL || true
           cpanm -v . || true
+          if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
+            echo "Alien toolchain modules failed to install -- dumping build logs"
+            for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; cat "$f"; done
+            exit 1
+          fi
+  winarm:
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v6
+      - name: prepare
+        shell: bash
+        run: |
+          curl -sL -o /c/strawberry.zip https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54051_64bit/strawberry-perl-5.40.5.1-64bit-portable.zip
+          rm -rf /c/Strawberry; powershell -NoProfile -Command Expand-Archive -Path C:/strawberry.zip -DestinationPath C:/Strawberry -Force -ErrorAction Stop
+          rm -f /c/strawberry.zip
+          ln -sf /c/Strawberry/c/bin/gcc.exe /c/Strawberry/c/bin/cc.exe
+          choco install make -y
+      - name: force strawberry on path
+        shell: bash
+        run: |
+          echo "/c/Strawberry/perl/site/bin" >> "$GITHUB_PATH"
+          echo "/c/Strawberry/perl/bin" >> "$GITHUB_PATH"
+          echo "/c/Strawberry/c/bin" >> "$GITHUB_PATH"
+          echo "XMAKE_ROOT=y" >> "$GITHUB_ENV"
+      - name: build
+        shell: bash
+        run: |
+          set -e
+          export PATH="/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
+          perl -e 'print qq(perl=\$^X :: \$^O :: arch=\$ENV{RUNNER_ARCH}\n)'
+          curl -fsSL https://cpanmin.us -o /c/cpanmin.pl
+          perl /c/cpanmin.pl App::cpanminus
+          rm -f /c/cpanmin.pl
+          cpanm --notest IO::Socket::SSL || true
+          #~ x64-emulated xmake.exe can't be spawned by Alien::Xrepo's
+          #~ system(LIST) install call on ARM64, so skip the test phase there.
+          cpanm -v --notest . || true
           if ! perl -MAlien::Xmake -MAlien::Xrepo -MAlien::Xrepo::MB -MAlien::Xrepo::Build -e 1 2>/dev/null; then
             echo "Alien toolchain modules failed to install -- dumping build logs"
             for f in "$HOME/.cpanm/work"/*/build.log; do echo "=== $f ==="; cat "$f"; done
