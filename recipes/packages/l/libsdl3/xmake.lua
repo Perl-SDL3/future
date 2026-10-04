@@ -1,7 +1,7 @@
 -- Local override of the xmake-repo package recipe for libsdl3.
 --
 -- Deviations from packages/l/libsdl3/xmake.lua in xmake-repo:
---   * builds sdl3 v 3.4.16
+--   * builds sdl3 v 3.4.18
 -- Keep this file in sync with the upstream recipe when bumping versions.
 --
 package("libsdl3")
@@ -21,6 +21,7 @@ package("libsdl3")
              "https://github.com/libsdl-org/SDL/releases/download/release-$(version)/SDL3-$(version).zip", { alias = "archive" })
     add_urls("https://github.com/libsdl-org/SDL.git", { alias = "github" })
 
+    add_versions("archive:3.4.18", "9cd42377704398796071b8597cd7e21da254a43bad98c4199739647adc13fa6f")
     add_versions("archive:3.4.16", "5f399fdfbc040169ef4418a3cb99ccc5a0641681f7ccc1da66eeec3c97fa4076")
     add_versions("archive:3.4.12", "3d4de8967a49c0451e775a0c1e9022092c19fdef41ba38a83fcf031c5a6496e2")
     add_versions("archive:3.4.4", "6bd4fbb665f77899a488b381c5b6e9681fc57c60b669738f985fea714f3456c5")
@@ -37,6 +38,8 @@ package("libsdl3")
     add_versions("archive:3.2.2", "58d8adc7068d38923f918e0bdaa9c4948f93d9ba204fe4de8cc6eaaf77ad6f82")
     add_versions("archive:3.2.0", "abe7114fa42edcc8097856787fa5d37f256d97e365b71368b60764fe7c10e4f8")
 
+    add_versions("github:3.4.18", "release-3.4.18")
+    add_versions("github:3.4.16", "release-3.4.16")
     add_versions("github:3.4.12", "release-3.4.12")
     add_versions("github:3.4.4", "release-3.4.4")
     add_versions("github:3.4.2", "release-3.4.2")
