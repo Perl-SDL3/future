@@ -206,6 +206,118 @@ jobs:
         curl -L https://cpanmin.us | perl - App::cpanminus
         command -v cpanm
         cpanm -v .
+
+  syslibs:
+    name: System libraries
+    secrets: inherit
+    uses: sanko/workflow-testing/.github/workflows/run-direct.yml@main
+    with:
+      #~ One entry per platform and nothing else: this leg is about the package
+      #~ manager's SDL3, not about the perl/toolchain matrix, and a second
+      #~ compiler or arch would double an already slow run (vcpkg builds the
+      #~ whole family from source on Windows) for no new coverage.
+      #~ perl_version/prepare are still required, not decoration: Alien::Xmake
+      #~ declares requires 'perl', 'v5.40.0', so an image perl older than that
+      #~ (Ubuntu 24.04 ships 5.38.2) makes cpanm bail with "Your Perl (5.038002)
+      #~ is not in the range 'v5.40.0'" and take the whole toolchain down with
+      #~ it. Ubuntu therefore gets the same source-built 5.40.5 the linux job
+      #~ uses, macOS the same 5.42.3, and Windows gets Strawberry through
+      #~ choco in `prepare` -- with perl_version unset, run-direct asserts the
+      #~ active perl is native (MSWin32) rather than the MSYS perl that
+      #~ git-bash puts first on PATH, and that check needs C:\Strawberry to
+      #~ exist.
+      matrix: |
+        [
+          {"name":"Linux   - Intel","platform_name":"ubuntu","os":"ubuntu-latest","arch":"x86_64","toolchain":"gcc","perl_version":"5.40.5"},
+          {"name":"macOS   - Apple Silicon","platform_name":"macos","os":"macos-15","arch":"aarch64","toolchain":"gcc","perl_version":"5.42.3"},
+          {"name":"Windows - Intel","platform_name":"windows","os":"windows-latest","arch":"x86_64","toolchain":"gcc","prepare":"choco install strawberryperl"}
+        ]
+      task: |
+        set -e
+        perl -V
+        #~ Install the SDL3 family and everything it links against through the
+        #~ platform package manager *before* the local build runs. The recipes
+        #~ declare add_extsources("apt::libsdl3-dev", "brew::sdl3",
+        #~ "pacman::SDL3"), so a packaged SDL3 flips xrepo from a from-source
+        #~ build to the distro library, and this leg is the only coverage of
+        #~ that path: it catches a distro SDL3 drifting away from the recipe we
+        #~ pin, and it leaves the codec/font/audio headers on disk so the
+        #~ from-source fallback has less to build.
+        #~ Everything after the "required" block is best-effort: the local build
+        #~ still has to pass whether or not the distro ships the family, so a
+        #~ missing package is reported and the run continues.
+        case "$RUNNER_OS" in
+        Linux)
+          sudo apt-get update -qq
+          #~ Required, not best-effort: recipes/packages/l/libsdl3/xmake.lua
+          #~ raises before configuring cmake unless all of these headers are
+          #~ present, on the grounds that bootstrapping the X11 stack from
+          #~ source has wedged CI for hours.
+          sudo apt-get install -y --no-install-recommends cmake ninja-build pkgconf curl \
+            libx11-dev libxcb1-dev libxext-dev libxfixes-dev libxcursor-dev libxrandr-dev \
+            libxi-dev libxrender-dev libxss-dev libxkbcommon-dev libwayland-dev
+          #~ The SDL3 family itself: in the archive from Ubuntu 25.10 on, absent
+          #~ in 24.04, so ubuntu-latest's release is what this leg gets to cover.
+          for pkg in libsdl3-dev libsdl3-image-dev libsdl3-ttf-dev libsdl3-mixer-dev; do
+            sudo apt-get install -y --no-install-recommends "$pkg" || echo "note: $pkg is not in this Ubuntu release"
+          done
+          #~ What the family links against. Also what the from-source fallback
+          #~ compiles against when a family member is missing above.
+          sudo apt-get install -y --no-install-recommends \
+            libpng-dev libjpeg-dev libtiff-dev libwebp-dev libfreetype6-dev \
+            libogg-dev libvorbis-dev libflac-dev libopus-dev libopusfile-dev \
+            libsndfile1-dev libasound2-dev libpulse-dev libpipewire-0.3-dev \
+            libudev-dev libdbus-1-dev libgl1-mesa-dev libegl1-mesa-dev \
+            libibus-1.0-dev zlib1g-dev libbz2-dev \
+            || echo 'note: some codec/audio development packages are missing'
+          if pkg-config --exists sdl3; then
+            echo "system libsdl3 v$(pkg-config --modversion sdl3)"
+          else
+            echo 'note: no system libsdl3.pc, the build falls back to its own'
+          fi
+          pkg-config --list-all 2>/dev/null | grep -i -e '^SDL3' -e 'SDL3_' || true
+          ;;
+        macOS)
+          brew update --quiet
+          #~ Bottled for both macOS architectures, so these should always land.
+          brew install sdl3 sdl3_image sdl3_ttf sdl3_mixer cmake pkg-config
+          #~ Explicit even though the formulae above already pull them in: the
+          #~ from-source fallback needs them too, and brew is free to skip a
+          #~ link-time-only dependency of a static formula.
+          brew install freetype libpng libtiff webp jpeg-turbo libogg libvorbis flac opus libsndfile \
+            || echo 'note: some codec/font packages are missing'
+          brew list --versions sdl3 sdl3_image sdl3_ttf sdl3_mixer
+          ;;
+        Windows)
+          #~ Chocolatey has no SDL3 package at all, so vcpkg (preinstalled on
+          #~ the Windows runner images) is the package manager here. Its tree is
+          #~ x64 to match Strawberry Perl's gcc.
+          vc="$(command -v vcpkg 2>/dev/null || true)"
+          [ -n "$vc" ] || vc="${VCPKG_INSTALLATION_ROOT:-C:/vcpkg}/vcpkg.exe"
+          echo "vcpkg: $vc"
+          "$vc" install --triplet x64-windows --clean-after-build \
+            sdl3 sdl3-image sdl3-ttf sdl3-mixer
+          choco install make -y -q
+          "$vc" list 2>/dev/null | grep -i sdl3 || true
+          ;;
+        esac
+        #~ Bootstrap cpanm, then build and install the dist locally as usual.
+        curl -L https://cpanmin.us | perl - App::cpanminus
+        cpanm -v .
+        #~ Audit: the whole family must resolve, whether that came from the
+        #~ package manager above or from the local build. This is also the only
+        #~ place the leg prints which version of each package actually won,
+        #~ which is what says whether the extsource path was taken at all.
+        perl -MAlien::SDL3 -e '
+          my $sdl3 = Alien::SDL3->new;
+          my $bad  = 0;
+          for my $name ($sdl3->package_names) {
+              my $info = $sdl3->alt($name)->package_info or do { print "MISSING $name\n"; ++$bad; next };
+              printf "%-16s v%-9s %-8s %s\n", $name, $info->version // q(?), $info->kind // q(?), $info->installdir // q(?);
+          }
+          exit($bad ? 1 : 0);
+        '
+
   results:
     if: always()
     name: Summary
@@ -213,6 +325,7 @@ jobs:
       - linux
       - macos
       - windows
+      - syslibs
     uses: sanko/workflow-testing/.github/workflows/results-summary.yml@main
   windows:
     name: Windows

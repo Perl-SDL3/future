@@ -112,7 +112,9 @@ package("libsdl3")
                 {"libxcb1-dev",      "/usr/include/xcb/xcb.h"},
                 {"libxext-dev",      "/usr/include/X11/extensions/shape.h"},
                 {"libxfixes-dev",    "/usr/include/X11/extensions/Xfixes.h"},
-                {"libxcursor-dev",   "/usr/include/X11/Xcursor.h"},
+                -- Debian/Ubuntu ships this header under X11/Xcursor/; there is
+                -- no /usr/include/X11/Xcursor.h to probe for.
+                {"libxcursor-dev",   "/usr/include/X11/Xcursor/Xcursor.h"},
                 {"libxrandr-dev",    "/usr/include/X11/extensions/Xrandr.h"},
                 {"libxi-dev",        "/usr/include/X11/extensions/XInput2.h"},
                 {"libxrender-dev",   "/usr/include/X11/extensions/Xrender.h"},
